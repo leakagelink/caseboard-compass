@@ -124,3 +124,7 @@
     color: var(--color-foreground);
   }
 }
+
+@utility scanlines {
+  background-image: repeating-linear-gradient(0deg, oklch(0.82 0.11 195 / 0.05) 0 1px, transparent 1px 4px);
+}

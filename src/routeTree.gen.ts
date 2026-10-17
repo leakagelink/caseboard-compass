@@ -10,43 +10,102 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as EvidenceRouteImport } from './routes/evidence'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as CaseCaseIdIndexRouteImport } from './routes/case.$caseId.index'
+import { Route as CaseCaseIdEvidenceRouteImport } from './routes/case.$caseId.evidence'
+import { Route as CaseCaseIdHuntRouteImport } from './routes/case.$caseId.hunt'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EvidenceRoute = EvidenceRouteImport.update({
-  id: '/evidence',
-  path: '/evidence',
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CaseCaseIdIndexRoute = CaseCaseIdIndexRouteImport.update({
+  id: '/case/$caseId/',
+  path: '/case/$caseId/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CaseCaseIdEvidenceRoute = CaseCaseIdEvidenceRouteImport.update({
+  id: '/case/$caseId/evidence',
+  path: '/case/$caseId/evidence',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CaseCaseIdHuntRoute = CaseCaseIdHuntRouteImport.update({
+  id: '/case/$caseId/hunt',
+  path: '/case/$caseId/hunt',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/evidence': typeof EvidenceRoute
+  '/admin': typeof AdminRoute
+  '/profile': typeof ProfileRoute
+  '/case/$caseId/evidence': typeof CaseCaseIdEvidenceRoute
+  '/case/$caseId/hunt': typeof CaseCaseIdHuntRoute
+  '/case/$caseId/': typeof CaseCaseIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/evidence': typeof EvidenceRoute
+  '/admin': typeof AdminRoute
+  '/profile': typeof ProfileRoute
+  '/case/$caseId/evidence': typeof CaseCaseIdEvidenceRoute
+  '/case/$caseId/hunt': typeof CaseCaseIdHuntRoute
+  '/case/$caseId': typeof CaseCaseIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/evidence': typeof EvidenceRoute
+  '/admin': typeof AdminRoute
+  '/profile': typeof ProfileRoute
+  '/case/$caseId/evidence': typeof CaseCaseIdEvidenceRoute
+  '/case/$caseId/hunt': typeof CaseCaseIdHuntRoute
+  '/case/$caseId/': typeof CaseCaseIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/evidence'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/profile'
+    | '/case/$caseId/evidence'
+    | '/case/$caseId/hunt'
+    | '/case/$caseId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/evidence'
-  id: '__root__' | '/' | '/evidence'
+  to:
+    | '/'
+    | '/admin'
+    | '/profile'
+    | '/case/$caseId/evidence'
+    | '/case/$caseId/hunt'
+    | '/case/$caseId'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/profile'
+    | '/case/$caseId/evidence'
+    | '/case/$caseId/hunt'
+    | '/case/$caseId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  EvidenceRoute: typeof EvidenceRoute
+  AdminRoute: typeof AdminRoute
+  ProfileRoute: typeof ProfileRoute
+  CaseCaseIdEvidenceRoute: typeof CaseCaseIdEvidenceRoute
+  CaseCaseIdHuntRoute: typeof CaseCaseIdHuntRoute
+  CaseCaseIdIndexRoute: typeof CaseCaseIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,11 +117,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/evidence': {
-      id: '/evidence'
-      path: '/evidence'
-      fullPath: '/evidence'
-      preLoaderRoute: typeof EvidenceRouteImport
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/case/$caseId/': {
+      id: '/case/$caseId/'
+      path: '/case/$caseId'
+      fullPath: '/case/$caseId/'
+      preLoaderRoute: typeof CaseCaseIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/case/$caseId/evidence': {
+      id: '/case/$caseId/evidence'
+      path: '/case/$caseId/evidence'
+      fullPath: '/case/$caseId/evidence'
+      preLoaderRoute: typeof CaseCaseIdEvidenceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/case/$caseId/hunt': {
+      id: '/case/$caseId/hunt'
+      path: '/case/$caseId/hunt'
+      fullPath: '/case/$caseId/hunt'
+      preLoaderRoute: typeof CaseCaseIdHuntRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -70,7 +157,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  EvidenceRoute: EvidenceRoute,
+  AdminRoute: AdminRoute,
+  ProfileRoute: ProfileRoute,
+  CaseCaseIdEvidenceRoute: CaseCaseIdEvidenceRoute,
+  CaseCaseIdHuntRoute: CaseCaseIdHuntRoute,
+  CaseCaseIdIndexRoute: CaseCaseIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
