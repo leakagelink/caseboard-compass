@@ -7,6 +7,7 @@ export type { Clue };
 export type CaseStatus = "published" | "draft";
 
 export type GameCase = {
+  campaign?: string;
   id: string;
   slug: string;
   order: number;

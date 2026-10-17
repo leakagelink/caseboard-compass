@@ -12,7 +12,7 @@ export function completeCase(s: Save, c: GameCase, flawless: boolean): Save {
   return { ...s, xp: s.xp + c.rewardXp + (flawless ? 50 : 0), flawless: flawless ? [...s.flawless, c.id] : s.flawless, cases: { ...s.cases, [c.id]: { ...prev, solved: true } } };
 }
 export function isUnlocked(cases: GameCase[], save: Save, c: GameCase) {
-  const published = cases.filter(x => x.status === 'published').sort((a,b) => a.order - b.order);
+  const published = cases.filter(x => x.status === 'published' && x.campaign === c.campaign).sort((a,b) => a.order - b.order);
   const i = published.findIndex(x => x.id === c.id);
   const previous = published[i - 1];
   return i >= 0 && (i === 0 || Boolean(previous && save.cases[previous.id]?.solved));

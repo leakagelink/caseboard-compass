@@ -2,7 +2,7 @@ import type { GameCase } from '@/data/cases';
 import { completeCase, emptyCase, isUnlocked, type Save, type Verdict } from './game';
 
 export type Encounter = { hp: number; ghostHp: number; phase: 'fight' | 'won' | 'lost'; lastAttack: number; scanAt: number; strikeAt: number; dodgeAt: number; revealedUntil: number; dodgeUntil: number; healed: boolean; log: string };
-export type CloudSave = Save & { encounters?: Record<string, Encounter> };
+export type CloudSave = Save & { encounters?: Record<string, Encounter>; locationCases?: GameCase[]; selectedArea?: string };
 export type GameAction = { caseId: string; kind: 'inspect' | 'judge' | 'accuse' | 'hint' | 'start' | 'tick' | 'scan' | 'strike' | 'dodge'; clueId?: string | undefined; verdict?: Verdict | undefined; suspectId?: string | undefined };
 export function applyAction(state: CloudSave, cases: GameCase[], action: GameAction, now: number): { state: CloudSave; message?: string } {
   const c = cases.find(x => x.id === action.caseId);
