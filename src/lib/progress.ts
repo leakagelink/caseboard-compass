@@ -68,7 +68,7 @@ export function isUnlocked(cases: GameCase[], save: Save, c: GameCase) {
   const pub = cases.filter((x) => x.status === "published").sort((a, b) => a.order - b.order);
   const i = pub.findIndex((x) => x.id === c.id);
   if (i < 0) return false;
-  return i === 0 || !!save.cases[pub[i - 1].id]?.solved;
+  return i === 0 || !!save.cases[pub[i - 1]!.id]?.solved;
 }
 
 export const level = (xp: number) => Math.floor(xp / 200) + 1;
