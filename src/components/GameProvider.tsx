@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from '@tanstack/react-router';
 import { useServerFn } from '@tanstack/react-start';
@@ -14,6 +14,7 @@ function useGameState() {
   const [authLoading, setAuthLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const actionLock = useRef(false);
   const queryClient = useQueryClient();
   const router = useRouter();
   const runAction = useServerFn(gameAction);
@@ -36,10 +37,12 @@ function useGameState() {
   const cases = CASES.map(c => { const o = settings.data?.find(x => x.case_id === c.id); return { ...c, title: o?.title ?? c.title, summary: o?.summary ?? c.summary, difficulty: o?.difficulty ?? c.difficulty, status: (o?.status ?? c.status) as 'published' | 'draft', rewardXp: o?.reward_xp ?? c.rewardXp, order: o?.sort_order ?? c.order }; }).sort((a,b) => a.order - b.order);
   const act = async (action: GameAction) => {
     if (!user) { setError('Sign in to save your investigation.'); return null; }
+    if (actionLock.current) return null;
+    actionLock.current = true;
     setBusy(true); setError(null);
     try { const r = await runAction({ data: action }); queryClient.setQueryData(['player', user.id, 'save'], r.state); return r; }
     catch (e) { setError(e instanceof Error ? e.message : 'Could not save. Please retry.'); return null; }
-    finally { setBusy(false); }
+    finally { actionLock.current = false; setBusy(false); }
   };
   const saveOverride = async (id: string, o: CaseOverride) => {
     setBusy(true); setError(null);
