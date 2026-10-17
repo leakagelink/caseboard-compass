@@ -7,17 +7,32 @@ import { emptySave } from './game';
 
 const actionSchema = z.object({ caseId: z.string(), kind: z.enum(['inspect','judge','accuse','hint','start','tick','scan','strike','dodge']), clueId: z.string().optional(), verdict: z.enum(['relevant','misleading']).optional(), suspectId: z.string().optional() });
 export const gameAction = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator(input => actionSchema.parse(input)).handler(async ({ data, context }) => {
+  const receivedAt = Date.now();
   const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
-  const settings = await context.supabase.from('case_settings').select('*');
+  const [settings, initialRow] = await Promise.all([
+    context.supabase.from('case_settings').select('*'),
+    supabaseAdmin.from('game_saves').select('state,revision').eq('user_id', context.userId).maybeSingle(),
+  ]);
   if (settings.error) throw new Error('Case settings are unavailable. Please retry.');
   const cases = CASES.map(c => { const o = settings.data.find(x => x.case_id === c.id); return { ...c, title: o?.title ?? c.title, summary: o?.summary ?? c.summary, difficulty: o?.difficulty ?? c.difficulty, status: (o?.status ?? c.status) as 'published' | 'draft', rewardXp: o?.reward_xp ?? c.rewardXp, order: o?.sort_order ?? c.order }; });
-  const { error: initError } = await supabaseAdmin.from('game_saves').upsert({ user_id: context.userId }, { onConflict: 'user_id', ignoreDuplicates: true });
-  if (initError) throw new Error('Could not open your saved progress.');
+  if (initialRow.error) throw new Error('Could not open your saved progress.');
+  if (!initialRow.data) {
+    const { error } = await supabaseAdmin.from('game_saves').upsert({ user_id: context.userId }, { onConflict: 'user_id', ignoreDuplicates: true });
+    if (error) throw new Error('Could not open your saved progress.');
+  }
   for (let retry = 0; retry < 4; retry++) {
-    const row = await supabaseAdmin.from('game_saves').select('state,revision').eq('user_id', context.userId).single();
-    if (row.error) throw new Error('Could not load progress.');
+    const row = retry === 0 && initialRow.data ? initialRow : await supabaseAdmin.from('game_saves').select('state,revision').eq('user_id', context.userId).single();
+    if (row.error || !row.data) throw new Error('Could not load progress.');
     const state = (row.data.state ?? emptySave) as unknown as CloudSave;
-    const result = applyAction(state, cases, data, Date.now());
+    const result = applyAction(state, cases, data, receivedAt);
+    // Database latency must not drain health or consume scanner visibility.
+    const encounter = result.state.encounters?.[data.caseId];
+    const processingTime = Math.max(0, Date.now() - receivedAt);
+    if (encounter?.phase === 'fight') {
+      encounter.lastAttack += processingTime;
+      if (encounter.revealedUntil > receivedAt) encounter.revealedUntil += processingTime;
+      if (encounter.dodgeUntil > receivedAt) encounter.dodgeUntil += processingTime;
+    }
     const write = await supabaseAdmin.from('game_saves').update({ state: JSON.parse(JSON.stringify(result.state)), revision: row.data.revision + 1, updated_at: new Date().toISOString() }).eq('user_id', context.userId).eq('revision', row.data.revision).select('revision');
     if (write.error) throw new Error('Could not save progress. Please retry.');
     if (write.data.length) return result;
