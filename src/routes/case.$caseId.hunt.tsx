@@ -1,8 +1,10 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { CASES } from "@/data/cases";
-import { completeCase, emptyCase, useCases, useSave } from "@/lib/progress";
+import { emptyCase, isUnlocked, useCases, useSave } from "@/lib/progress";
 import { Bar } from "@/components/Shell";
+import { Button } from "@/components/ui/button";
+import { Volume2, VolumeX, Radar, Shield, Zap } from "lucide-react";
 import ghostImg from "@/assets/ghost.png";
 
 export const Route = createFileRoute("/case/$caseId/hunt")({
@@ -24,256 +26,78 @@ export const Route = createFileRoute("/case/$caseId/hunt")({
   component: Hunt,
 });
 
-type Phase = "intro" | "fight" | "won" | "lost";
-const PLAYER_MAX = 100;
-
 function Hunt() {
   const { caseId } = Route.useParams();
   const { cases } = useCases();
-  const c = cases.find((x) => x.slug === caseId)!;
-  const { save, update } = useSave();
+  const { save, act, user, loading, busy, error, retry } = useSave();
+  const c = cases.find(x => x.slug === caseId);
+  if (!c) throw notFound();
   const p = save.cases[c.id] ?? emptyCase;
-
+  const e = save.encounters?.[c.id];
+  const [started, setStarted] = useState(false);
+  const [camera, setCamera] = useState(false);
+  const [requesting, setRequesting] = useState(false);
+  const [camError, setCamError] = useState<string | null>(null);
+  const [muted, setMuted] = useState(false);
+  const [now, setNow] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const [camera, setCamera] = useState(false);
-  const [camError, setCamError] = useState<string | null>(null);
-
-  const [phase, setPhase] = useState<Phase>("intro");
-  const [ghostHp, setGhostHp] = useState(c.ghost.hp);
-  const [hp, setHp] = useState(PLAYER_MAX);
-  const [pos, setPos] = useState({ x: 50, y: 45 });
-  const [revealed, setRevealed] = useState(false);
-  const [vanished, setVanished] = useState(false);
-  const [scanCd, setScanCd] = useState(0);
-  const [atkCd, setAtkCd] = useState(0);
-  const [dodgeCd, setDodgeCd] = useState(0);
-  const [dodging, setDodging] = useState(false);
-  const [flash, setFlash] = useState<"hit" | "hurt" | null>(null);
-  const [log, setLog] = useState("Sweep the area with your scanner.");
-  const [healed, setHealed] = useState(false);
-  const dodgingRef = useRef(false);
-  dodgingRef.current = dodging;
-
-  const stopCamera = () => {
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-    setCamera(false);
+  const audioRef = useRef<AudioContext | null>(null);
+  const activeRef = useRef(true);
+  const requestRef = useRef(0);
+  const busyRef = useRef(false);
+  busyRef.current = busy;
+  const actRef = useRef(act); actRef.current = act;
+  const phase = started ? e?.phase ?? 'intro' : 'intro';
+  const stopCamera = () => { requestRef.current += 1; streamRef.current?.getTracks().forEach(t => t.stop()); streamRef.current = null; setCamera(false); };
+  useEffect(() => { activeRef.current = true; return () => { activeRef.current = false; requestRef.current += 1; streamRef.current?.getTracks().forEach(t => t.stop()); void audioRef.current?.close(); }; }, []);
+  useEffect(() => {
+    if (!camera || !videoRef.current || !streamRef.current) return;
+    videoRef.current.srcObject = streamRef.current;
+    void videoRef.current.play().catch(() => { setCamError('Camera playback failed. Practice mode is still available.'); stopCamera(); });
+  }, [camera]);
+  useEffect(() => {
+    if (phase !== 'fight') return;
+    const clock = setInterval(() => setNow(Date.now()), 100);
+    const tick = setInterval(() => { if (!busyRef.current) void actRef.current({ caseId: c.id, kind: 'tick' }); }, 1200);
+    return () => { clearInterval(clock); clearInterval(tick); };
+  }, [phase, c.id]);
+  useEffect(() => { if (phase === 'won' || phase === 'lost') stopCamera(); }, [phase]);
+  const sound = (frequency: number) => {
+    if (muted) return;
+    try { audioRef.current ??= new AudioContext(); const ctx = audioRef.current; void ctx.resume(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.frequency.value = frequency; gain.gain.setValueAtTime(0.045, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18); osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.18); } catch { /* Sound is optional; gameplay remains available. */ }
   };
-  useEffect(() => stopCamera, []);
-
+  const begin = async () => { sound(180); const result = await act({ caseId: c.id, kind: 'start' }); if (result && activeRef.current) { setNow(Date.now()); setStarted(true); } return Boolean(result); };
   const startAR = async () => {
-    setCamError(null);
+    setRequesting(true); setCamError(null); const request = ++requestRef.current;
     try {
-      if (!navigator.mediaDevices?.getUserMedia) throw new Error("unsupported");
-      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false });
-      streamRef.current = s;
-      setCamera(true);
-      begin();
-      requestAnimationFrame(() => {
-        if (videoRef.current) {
-          videoRef.current.srcObject = s;
-          void videoRef.current.play();
-        }
-      });
-    } catch (e) {
-      setCamError(
-        (e as Error).name === "NotAllowedError"
-          ? "Camera permission was denied. You can still play in practice mode."
-          : "Camera isn't available on this device. Try practice mode.",
-      );
-    }
+      if (!navigator.mediaDevices?.getUserMedia) throw new Error('unsupported');
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+      if (!activeRef.current || request !== requestRef.current) { stream.getTracks().forEach(t => t.stop()); return; }
+      streamRef.current = stream;
+      if (await begin()) setCamera(true); else stopCamera();
+    } catch (err) {
+      if (activeRef.current) setCamError(err instanceof DOMException && err.name === 'NotAllowedError' ? 'Camera permission was denied. Use practice mode or allow the camera and retry.' : 'Camera is unavailable. You can still play in practice mode.');
+    } finally { if (activeRef.current) setRequesting(false); }
   };
-
-  const begin = () => {
-    setGhostHp(c.ghost.hp); setHp(PLAYER_MAX); setRevealed(false); setVanished(false);
-    setScanCd(0); setAtkCd(0); setDodgeCd(0); setHealed(false);
-    setLog("Sweep the area with your scanner."); setPhase("fight");
-  };
-
-  // Ghost movement + attacks + cooldown ticks
-  useEffect(() => {
-    if (phase !== "fight") return;
-    const move = setInterval(() => setPos({ x: 20 + Math.random() * 60, y: 25 + Math.random() * 40 }), 1800);
-    const tick = setInterval(() => {
-      setScanCd((v) => Math.max(0, v - 100)); setAtkCd((v) => Math.max(0, v - 100)); setDodgeCd((v) => Math.max(0, v - 100));
-    }, 100);
-    const attack = setInterval(() => {
-      if (Math.random() < 0.25) {
-        setVanished(true); setRevealed(false); setLog(`${c.ghost.name} skips out of sight!`);
-        setTimeout(() => setVanished(false), 2000);
-        return;
-      }
-      if (dodgingRef.current) { setLog("Dodged!"); return; }
-      setHp((h) => h - c.ghost.power);
-      setFlash("hurt"); setTimeout(() => setFlash(null), 250);
-      setLog(`${c.ghost.name} strikes! −${c.ghost.power}`);
-    }, c.ghost.attackEvery);
-    return () => { clearInterval(move); clearInterval(tick); clearInterval(attack); };
-  }, [phase, c.ghost]);
-
-  useEffect(() => {
-    if (phase !== "fight") return;
-    if (hp <= 0) { setPhase("lost"); stopCamera(); }
-    else if (ghostHp <= 0) {
-      setPhase("won"); stopCamera();
-      update((s) => completeCase(s, c, hp >= 70));
-    }
-  }, [hp, ghostHp, phase]);
-
-  const scan = () => {
-    if (scanCd > 0) return;
-    setScanCd(5000);
-    if (vanished) { setLog("Nothing… it's hiding."); return; }
-    setRevealed(true); setLog("Entity revealed! Strike now.");
-    setTimeout(() => setRevealed(false), 3000);
-  };
-  const attack = () => {
-    if (atkCd > 0) return;
-    setAtkCd(700);
-    if (!revealed || vanished) { setLog("You can't hit what you can't see. Scan first."); return; }
-    const dmg = c.ghost.mode === "release" ? 18 : 15;
-    setGhostHp((g) => {
-      let next = g - dmg;
-      if (c.id === "CASE-003" && !healed && next < c.ghost.hp * 0.3 && next > 0) {
-        setHealed(true); setLog("Undertow! The Warden regains strength."); next += 40;
-      } else setLog(c.ghost.mode === "release" ? `Truth lands. −${dmg}` : `Direct hit! −${dmg}`);
-      return next;
-    });
-    setFlash("hit"); setTimeout(() => setFlash(null), 200);
-  };
-  const dodge = () => {
-    if (dodgeCd > 0) return;
-    setDodgeCd(4000); setDodging(true);
-    setTimeout(() => setDodging(false), 1200);
-  };
-
-  const actionLabel = c.ghost.mode === "release" ? "Expose" : "Banish";
-
-  return (
-    <div className="relative min-h-screen overflow-hidden bg-background">
-      {/* Background: live camera or practice fog */}
-      {camera ? (
-        <video ref={videoRef} playsInline muted className="absolute inset-0 h-full w-full object-cover" />
-      ) : (
-        <div className="fog absolute inset-0" />
-      )}
-      <div className="scanlines pointer-events-none absolute inset-0" />
-      {flash === "hurt" && <div className="pointer-events-none absolute inset-0 bg-primary/30" />}
-
-      {phase === "fight" && (
-        <>
-          {/* Ghost */}
-          <img
-            src={ghostImg}
-            alt={c.ghost.name}
-            width={768}
-            height={1024}
-            className="pointer-events-none absolute w-40 -translate-x-1/2 -translate-y-1/2 transition-all duration-1000 ease-in-out"
-            style={{
-              left: `${pos.x}%`,
-              top: `${pos.y}%`,
-              opacity: vanished ? 0 : revealed ? 0.95 : 0.12,
-              filter: flash === "hit" ? "brightness(2.5)" : revealed ? "drop-shadow(0 0 20px var(--ghost))" : "blur(3px)",
-            }}
-          />
-          {/* Reticle */}
-          <div className="pointer-events-none absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-ghost/60">
-            <div className="absolute left-1/2 top-0 h-full w-px bg-ghost/40" />
-            <div className="absolute left-0 top-1/2 h-px w-full bg-ghost/40" />
-          </div>
-        </>
-      )}
-
-      {/* HUD */}
-      <div className="relative z-10 mx-auto flex min-h-screen max-w-md flex-col px-4 py-4">
-        <div className="flex items-center justify-between text-xs">
-          <Link to="/case/$caseId" params={{ caseId }} onClick={stopCamera} className="text-muted-foreground">← Exit</Link>
-          <span className="font-display text-ghost">SPECTRAL SCANNER · {camera ? "AR CAM" : "PRACTICE"}</span>
-        </div>
-
-        {phase === "fight" && (
-          <div className="mt-3 space-y-2 rounded-md bg-background/70 p-3 backdrop-blur">
-            <div className="flex justify-between text-[11px]"><span className="text-primary">{c.ghost.name}</span><span>{Math.max(0, ghostHp)}/{c.ghost.hp}</span></div>
-            <Bar value={ghostHp} max={c.ghost.hp} tone="primary" />
-            <div className="flex justify-between text-[11px]"><span className="text-ghost">You</span><span>{Math.max(0, hp)}/{PLAYER_MAX}</span></div>
-            <Bar value={hp} max={PLAYER_MAX} tone="ghost" />
-            <p className="pt-1 text-xs text-muted-foreground" aria-live="polite">{dodging ? "Evading…" : log}</p>
-          </div>
-        )}
-
-        <div className="flex-1" />
-
-        {phase === "intro" && (
-          <div className="rounded-lg border border-border bg-card/90 p-5 backdrop-blur">
-            <p className="text-xs uppercase tracking-widest text-primary">{c.id} · Final encounter</p>
-            <h1 className="font-display mt-2 text-2xl">{c.ghost.name}</h1>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Scan to reveal the entity, then {actionLabel.toLowerCase()} it while visible. Dodge to avoid its strikes.
-            </p>
-            {!p.deduced && <p className="mt-3 text-sm text-primary">Finish the evidence board first.</p>}
-            {camError && <p className="mt-3 text-sm text-primary">{camError}</p>}
-            <div className="mt-4 space-y-2">
-              <button disabled={!p.deduced} onClick={startAR} className="w-full rounded-md bg-primary py-3 font-display text-primary-foreground disabled:opacity-40">
-                Start AR Hunt (uses camera)
-              </button>
-              <button disabled={!p.deduced} onClick={begin} className="w-full rounded-md border border-ghost py-3 font-display text-ghost disabled:opacity-40">
-                Practice Mode (no camera)
-              </button>
-            </div>
-            <p className="mt-3 text-[11px] text-muted-foreground">
-              Camera video stays on your device and is never recorded. Play in a safe, open indoor space. This web version is a prototype — full 3D AR tracking comes with the mobile app.
-            </p>
-          </div>
-        )}
-
-        {phase === "fight" && (
-          <div className="grid grid-cols-3 gap-3 pb-2">
-            <HudButton label="Scan" cd={scanCd} max={5000} onClick={scan} tone="ghost" />
-            <HudButton label={actionLabel} cd={atkCd} max={700} onClick={attack} tone="primary" big />
-            <HudButton label="Dodge" cd={dodgeCd} max={4000} onClick={dodge} tone="ghost" />
-          </div>
-        )}
-
-        {phase === "lost" && (
-          <div className="rounded-lg border border-primary bg-card/95 p-5">
-            <p className="text-xs uppercase tracking-widest text-primary">You were overwhelmed</p>
-            <p className="mt-2 text-sm">{c.ghost.name} drives you from the scene. Catch your breath and try again.</p>
-            <button onClick={begin} className="mt-4 w-full rounded-md bg-primary py-3 font-display text-primary-foreground">Retry (practice)</button>
-            <button onClick={() => { setPhase("intro"); }} className="mt-2 w-full rounded-md border border-border py-3 text-sm">Back to briefing</button>
-          </div>
-        )}
-
-        {phase === "won" && (
-          <div className="max-h-[80vh] overflow-y-auto rounded-lg border border-ghost bg-card/95 p-5 shadow-[var(--shadow-eerie)]">
-            <p className="text-xs uppercase tracking-widest text-ghost">Case Solved · {c.id}</p>
-            <h1 className="font-display mt-2 text-2xl">The ghost was {c.ghost.trueName}</h1>
-            <p className="mt-3 text-sm leading-relaxed">{c.reveal}</p>
-            <p className="mt-4 text-sm text-ghost">+{c.rewardXp} XP{hp >= 70 ? " · +50 flawless bonus" : ""}</p>
-            <p className="text-[11px] text-muted-foreground">Rewards are only granted on your first solve.</p>
-            <div className="mt-4 space-y-2">
-              <Link to="/" className="block rounded-md bg-primary py-3 text-center font-display text-primary-foreground">Back to Case Map</Link>
-              <Link to="/profile" className="block rounded-md border border-border py-3 text-center text-sm">View Bestiary</Link>
-            </div>
-          </div>
-        )}
-      </div>
+  const command = async (kind: 'scan' | 'strike' | 'dodge') => { sound(kind === 'scan' ? 650 : kind === 'strike' ? 110 : 320); await act({ caseId: c.id, kind }); };
+  const allowed = Boolean(user && p.deduced && isUnlocked(cases, save, c));
+  const revealed = Boolean(e && now < e.revealedUntil);
+  const cooldown = (at: number, duration: number) => Math.max(0, at + duration - now);
+  const actionLabel = c.ghost.mode === 'release' ? 'Expose' : 'Banish';
+  return <div className="relative min-h-screen overflow-hidden bg-background">
+    {camera ? <video ref={videoRef} playsInline muted className="absolute inset-0 h-full w-full object-cover" /> : <div className="fog absolute inset-0" />}
+    <div className="scanlines pointer-events-none absolute inset-0" />
+    {phase === 'fight' && <><img src={ghostImg} alt={c.ghost.name} width={768} height={1024} className={`ghost-entity pointer-events-none absolute left-1/2 top-[45%] w-40 -translate-x-1/2 -translate-y-1/2 ${revealed ? 'opacity-95' : 'opacity-10 blur-sm'}`} /><div className="pointer-events-none absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-ghost/60" /></>}
+    <div className="relative z-10 mx-auto flex min-h-screen max-w-md flex-col px-4 py-4">
+      <div className="flex items-center justify-between gap-2 text-xs"><Link to="/case/$caseId" params={{ caseId }} onClick={stopCamera} className="text-muted-foreground">← Exit</Link><span className="font-display text-ghost">SCANNER · {camera ? 'AR CAM' : 'PRACTICE'}</span><Button variant="ghost" size="icon" title={muted ? 'Enable sound' : 'Mute sound'} aria-label={muted ? 'Enable sound' : 'Mute sound'} onClick={() => setMuted(!muted)}>{muted ? <VolumeX /> : <Volume2 />}</Button></div>
+      {error && <div role="alert" className="mt-3 bg-background/90 p-3 text-sm text-primary"><p>{error}</p><Button variant="outline" size="sm" onClick={retry}>Retry connection</Button></div>}
+      {phase === 'fight' && e && <div className="mt-3 space-y-2 rounded-md bg-background/80 p-3 backdrop-blur"><div className="flex justify-between text-xs"><span className="text-primary">{c.ghost.name}</span><span>{e.ghostHp}/{c.ghost.hp}</span></div><Bar value={e.ghostHp} max={c.ghost.hp} tone="primary" /><div className="flex justify-between text-xs"><span className="text-ghost">You</span><span>{e.hp}/100</span></div><Bar value={e.hp} max={100} tone="ghost" /><p aria-live="polite" className="min-h-10 pt-1 text-xs text-muted-foreground">{e.log}</p></div>}
+      <div className="flex-1" />
+      {phase === 'intro' && <section className="border-t border-ghost bg-background/90 py-6"><p className="text-xs uppercase text-primary">{c.id} · Final encounter</p><h1 className="font-display mt-2 text-2xl">{c.ghost.name}</h1>{loading ? <p role="status" className="mt-3">Loading encounter…</p> : !allowed && <p className="mt-3 text-sm text-primary">{!user ? 'Sign in to hunt.' : !isUnlocked(cases, save, c) ? 'This case is locked or unpublished.' : 'Finish the evidence board first.'}</p>}{camError && <p role="alert" className="mt-3 text-sm text-primary">{camError}</p>}<div className="mt-4 space-y-2"><Button disabled={!allowed || busy || requesting} onClick={() => void startAR()} className="h-12 w-full">{requesting ? 'Opening camera…' : 'Start AR Hunt (uses camera)'}</Button><Button disabled={!allowed || busy || requesting} variant="outline" onClick={() => void begin()} className="h-12 w-full border-ghost text-ghost">Practice Mode (no camera)</Button>{!user && <Button asChild variant="outline" className="w-full"><Link to="/auth">Sign in</Link></Button>}</div><p className="mt-3 text-xs text-muted-foreground">Camera video stays on your device and is never recorded. Stay in a safe indoor space. Full 3D AR tracking belongs to the mobile version.</p></section>}
+      {phase === 'fight' && e && <div className="grid grid-cols-3 gap-3 pb-2"><Button disabled={busy || cooldown(e.scanAt,5000)>0} variant="outline" onClick={() => void command('scan')} className="h-16 flex-col border-ghost text-ghost"><Radar /><span>{cooldown(e.scanAt,5000)>0 ? `${Math.ceil(cooldown(e.scanAt,5000)/1000)}s` : 'Scan'}</span></Button><Button disabled={busy || cooldown(e.strikeAt,700)>0} onClick={() => void command('strike')} className="h-16 flex-col"><Zap />{actionLabel}</Button><Button disabled={busy || cooldown(e.dodgeAt,4000)>0} variant="outline" onClick={() => void command('dodge')} className="h-16 flex-col border-ghost text-ghost"><Shield /><span>{cooldown(e.dodgeAt,4000)>0 ? `${Math.ceil(cooldown(e.dodgeAt,4000)/1000)}s` : 'Dodge'}</span></Button></div>}
+      {phase === 'lost' && <section className="border-t border-primary bg-background/95 py-6"><h1 className="font-display text-2xl">You were overwhelmed</h1><p className="mt-3 text-sm">Catch your breath and try again.</p><Button disabled={busy} onClick={() => void begin()} className="mt-4 w-full">Retry (practice)</Button><Button variant="outline" className="mt-2 w-full" onClick={() => setStarted(false)}>Back to briefing</Button></section>}
+      {phase === 'won' && <section className="max-h-[80vh] overflow-y-auto border-t border-ghost bg-background/95 py-6"><p className="text-xs uppercase text-ghost">Case Solved · {c.id}</p><h1 className="font-display mt-2 text-2xl">The ghost was {c.ghost.trueName}</h1><p className="mt-3 text-sm leading-relaxed">{c.reveal}</p><p className="mt-4 text-sm text-ghost">{save.xp} XP total · Saved online</p><p className="mt-1 text-xs text-muted-foreground">Rewards are granted only on your first solve.</p><Button asChild className="mt-4 w-full"><Link to="/">Back to Case Map</Link></Button><Button asChild variant="outline" className="mt-2 w-full"><Link to="/profile">View Bestiary</Link></Button></section>}
     </div>
-  );
-}
-
-function HudButton({ label, cd, max, onClick, tone, big }: { label: string; cd: number; max: number; onClick: () => void; tone: "ghost" | "primary"; big?: boolean }) {
-  const ready = cd === 0;
-  return (
-    <button
-      onClick={onClick}
-      disabled={!ready}
-      className={`relative overflow-hidden rounded-full border-2 font-display ${big ? "h-20" : "h-16 self-end"} ${
-        tone === "primary" ? "border-primary bg-primary/20 text-primary-foreground" : "border-ghost bg-background/60 text-ghost"
-      } ${ready ? "" : "opacity-60"}`}
-    >
-      <span className="absolute inset-x-0 bottom-0 bg-foreground/15" style={{ height: `${(cd / max) * 100}%` }} />
-      <span className="relative">{label}</span>
-    </button>
-  );
+  </div>;
 }
