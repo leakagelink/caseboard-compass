@@ -29,7 +29,8 @@ export const editCase = createServerFn({ method: 'POST' }).middleware([requireSu
   const role = await context.supabase.rpc('has_role', { _user_id: context.userId, _role: 'admin' });
   if (role.error || !role.data) throw new Error('Admin access required.');
   if (!CASES.some(c => c.id === data.caseId)) throw new Error('Unknown case.');
-  const { error } = await context.supabase.from('case_settings').upsert({ case_id: data.caseId, title: data.title, summary: data.summary, difficulty: data.difficulty, status: data.status, reward_xp: data.rewardXp, sort_order: data.order, updated_at: new Date().toISOString() });
+  const patch = { case_id: data.caseId, ...(data.title !== undefined ? { title: data.title } : {}), ...(data.summary !== undefined ? { summary: data.summary } : {}), ...(data.difficulty !== undefined ? { difficulty: data.difficulty } : {}), ...(data.status !== undefined ? { status: data.status } : {}), ...(data.rewardXp !== undefined ? { reward_xp: data.rewardXp } : {}), ...(data.order !== undefined ? { sort_order: data.order } : {}), updated_at: new Date().toISOString() };
+  const { error } = await context.supabase.from('case_settings').upsert(patch);
   if (error) throw new Error('Case changes could not be saved.');
   return { ok: true };
 });
