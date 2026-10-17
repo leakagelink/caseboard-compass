@@ -8,6 +8,13 @@
       "when": 1792254410678,
       "tag": "0000_phase_one_cloud_progress",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792254643291,
+      "tag": "0001_restrict_role_checks",
+      "breakpoints": true
     }
   ]
 }
