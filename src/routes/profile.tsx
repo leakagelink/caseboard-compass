@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ACHIEVEMENTS, level, useCases, useSave } from "@/lib/progress";
 import { Bar, Section, Shell } from "@/components/Shell";
+import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -17,7 +19,7 @@ export const Route = createFileRoute("/profile")({
 });
 
 function Profile() {
-  const { save, resetAll } = useSave();
+  const { save, user } = useSave();
   const { cases } = useCases();
   const lv = level(save.xp);
   const evidence = cases.flatMap((c) =>
@@ -27,6 +29,7 @@ function Profile() {
   return (
     <Shell>
       <h1 className="font-display text-3xl">Detective File</h1>
+      {user && <p className="mt-2 text-xs text-ghost">{user.user_metadata?.['full_name'] ?? 'Detective'} · Online progress</p>}
       <div className="mt-4 rounded-lg border border-border bg-card p-4">
         <div className="flex justify-between text-sm"><span>Level {lv}</span><span className="text-ghost">{save.xp} XP</span></div>
         <div className="mt-2"><Bar value={save.xp % 200} max={200} tone="ghost" /></div>
@@ -81,14 +84,10 @@ function Profile() {
       <Section title="Settings & Privacy">
         <ul className="space-y-2 text-xs text-muted-foreground">
           <li>Camera is only requested when you start an AR hunt and is never recorded.</li>
-          <li>No location tracking. Progress is saved on this device only.</li>
+          <li>No location tracking. Signed-in progress is saved online.</li>
+          <li>Old device-only prototype saves remain on that device; online rewards start with a new investigation.</li>
         </ul>
-        <button
-          onClick={() => confirm("Erase all progress?") && resetAll()}
-          className="mt-4 rounded border border-primary px-4 py-2 text-xs text-primary"
-        >
-          Reset progress
-        </button>
+        {user && <Button variant="outline" className="mt-4" onClick={() => void supabase.auth.signOut()}>Sign out</Button>}
       </Section>
     </Shell>
   );
