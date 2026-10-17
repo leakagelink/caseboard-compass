@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as CaseCaseIdIndexRouteImport } from './routes/case.$caseId.index'
 import { Route as CaseCaseIdEvidenceRouteImport } from './routes/case.$caseId.evidence'
@@ -24,6 +25,11 @@ const IndexRoute = IndexRouteImport.update({
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileRoute = ProfileRouteImport.update({
@@ -50,6 +56,7 @@ const CaseCaseIdHuntRoute = CaseCaseIdHuntRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
   '/profile': typeof ProfileRoute
   '/case/$caseId/evidence': typeof CaseCaseIdEvidenceRoute
   '/case/$caseId/hunt': typeof CaseCaseIdHuntRoute
@@ -58,6 +65,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
   '/profile': typeof ProfileRoute
   '/case/$caseId/evidence': typeof CaseCaseIdEvidenceRoute
   '/case/$caseId/hunt': typeof CaseCaseIdHuntRoute
@@ -67,6 +75,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/auth': typeof AuthRoute
   '/profile': typeof ProfileRoute
   '/case/$caseId/evidence': typeof CaseCaseIdEvidenceRoute
   '/case/$caseId/hunt': typeof CaseCaseIdHuntRoute
@@ -77,6 +86,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/auth'
     | '/profile'
     | '/case/$caseId/evidence'
     | '/case/$caseId/hunt'
@@ -85,6 +95,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/auth'
     | '/profile'
     | '/case/$caseId/evidence'
     | '/case/$caseId/hunt'
@@ -93,6 +104,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/admin'
+    | '/auth'
     | '/profile'
     | '/case/$caseId/evidence'
     | '/case/$caseId/hunt'
@@ -102,6 +114,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  AuthRoute: typeof AuthRoute
   ProfileRoute: typeof ProfileRoute
   CaseCaseIdEvidenceRoute: typeof CaseCaseIdEvidenceRoute
   CaseCaseIdHuntRoute: typeof CaseCaseIdHuntRoute
@@ -122,6 +135,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin'
       preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile': {
@@ -158,6 +178,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  AuthRoute: AuthRoute,
   ProfileRoute: ProfileRoute,
   CaseCaseIdEvidenceRoute: CaseCaseIdEvidenceRoute,
   CaseCaseIdHuntRoute: CaseCaseIdHuntRoute,

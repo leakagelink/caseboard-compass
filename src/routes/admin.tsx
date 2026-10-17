@@ -1,8 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useCases, type CaseOverride } from "@/lib/progress";
 import type { GameCase } from "@/data/cases";
 import { Shell } from "@/components/Shell";
+import { Button } from '@/components/ui/button';
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -19,14 +20,17 @@ export const Route = createFileRoute("/admin")({
 });
 
 function Admin() {
-  const { cases, saveOverride, resetOverrides } = useCases();
+  const { cases, saveOverride, isAdmin, adminLoading, user, busy } = useCases();
   const [editing, setEditing] = useState<string | null>(null);
+
+  if (adminLoading) return <Shell><p role="status">Checking admin access…</p></Shell>;
+  if (!isAdmin) return <Shell><h1 className="font-display text-3xl">Case Admin</h1><p className="mt-4 text-sm">{user ? 'Admin access has not been assigned to this account.' : 'Sign in with an approved admin account.'}</p><Button asChild variant="outline" className="mt-4"><Link to="/auth">Account</Link></Button></Shell>;
 
   return (
     <Shell>
       <h1 className="font-display text-3xl">Case Admin</h1>
       <p className="mt-1 text-xs text-muted-foreground">
-        Prototype: edits are saved on this device only. Shared, secure case management arrives with accounts.
+        Case management · Online
       </p>
 
       <div className="mt-5 grid grid-cols-3 gap-2 text-center">
@@ -38,7 +42,7 @@ function Admin() {
       <div className="mt-6 space-y-3">
         {cases.map((c) =>
           editing === c.id ? (
-            <Editor key={c.id} c={c} onCancel={() => setEditing(null)} onSave={(o) => { saveOverride(c.id, o); setEditing(null); }} />
+            <Editor key={c.id} c={c} busy={busy} onCancel={() => setEditing(null)} onSave={async (o) => { if (await saveOverride(c.id, o)) setEditing(null); }} />
           ) : (
             <div key={c.id} className="rounded-lg border border-border bg-card p-4">
               <div className="flex justify-between text-xs">
@@ -48,19 +52,18 @@ function Admin() {
               <p className="font-display mt-1 text-lg">{c.title}</p>
               <p className="text-xs text-muted-foreground">{c.difficulty} · {c.rewardXp} XP · {c.clues.length} clues · {c.ghost.name}</p>
               <div className="mt-3 flex gap-2 text-xs">
-                <button onClick={() => setEditing(c.id)} className="rounded border border-ghost px-3 py-1 text-ghost">Edit</button>
-                <button
+                <Button size="sm" variant="outline" disabled={busy} onClick={() => setEditing(c.id)} className="border-ghost text-ghost">Edit</Button>
+                <Button size="sm" variant="outline" disabled={busy}
                   onClick={() => saveOverride(c.id, { status: c.status === "published" ? "draft" : "published" })}
                   className="rounded border border-border px-3 py-1"
                 >
                   {c.status === "published" ? "Unpublish" : "Publish"}
-                </button>
+                </Button>
               </div>
             </div>
           ),
         )}
       </div>
-      <button onClick={resetOverrides} className="mt-6 text-xs text-muted-foreground underline">Restore original case data</button>
     </Shell>
   );
 }
@@ -74,7 +77,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   );
 }
 
-function Editor({ c, onSave, onCancel }: { c: GameCase; onSave: (o: CaseOverride) => void; onCancel: () => void }) {
+function Editor({ c, onSave, onCancel, busy }: { c: GameCase; onSave: (o: CaseOverride) => void; onCancel: () => void; busy: boolean }) {
   const [f, setF] = useState({ title: c.title, summary: c.summary, difficulty: c.difficulty, rewardXp: c.rewardXp, order: c.order });
   const input = "w-full rounded border border-input bg-background px-3 py-2 text-sm";
   return (
@@ -84,11 +87,11 @@ function Editor({ c, onSave, onCancel }: { c: GameCase; onSave: (o: CaseOverride
       <div className="grid grid-cols-3 gap-2">
         <label className="block text-xs text-muted-foreground">Difficulty<input className={input} value={f.difficulty} onChange={(e) => setF({ ...f, difficulty: e.target.value })} /></label>
         <label className="block text-xs text-muted-foreground">XP<input type="number" min={0} max={1000} className={input} value={f.rewardXp} onChange={(e) => setF({ ...f, rewardXp: Math.min(1000, Math.max(0, +e.target.value)) })} /></label>
-        <label className="block text-xs text-muted-foreground">Order<input type="number" min={1} className={input} value={f.order} onChange={(e) => setF({ ...f, order: +e.target.value })} /></label>
+        <label className="block text-xs text-muted-foreground">Order<input type="number" min={1} max={3} className={input} value={f.order} onChange={(e) => setF({ ...f, order: +e.target.value })} /></label>
       </div>
       <div className="flex gap-2 text-sm">
-        <button onClick={() => onSave(f)} className="rounded bg-primary px-4 py-2 text-primary-foreground">Save</button>
-        <button onClick={onCancel} className="rounded border border-border px-4 py-2">Cancel</button>
+        <Button disabled={busy} onClick={() => onSave(f)}>Save</Button>
+        <Button disabled={busy} variant="outline" onClick={onCancel}>Cancel</Button>
       </div>
     </div>
   );

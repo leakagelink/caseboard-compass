@@ -26,7 +26,8 @@ function Dossier() {
   const { caseId } = Route.useParams();
   const { cases } = useCases();
   const { save } = useSave();
-  const c = cases.find((x) => x.slug === caseId)!;
+  const c = cases.find((x) => x.slug === caseId);
+  if (!c) throw notFound();
   const p = save.cases[c.id];
   const open = isUnlocked(cases, save, c);
 
