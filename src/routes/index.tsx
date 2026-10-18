@@ -6,12 +6,14 @@ import { Shell } from "@/components/Shell";
 import { Button } from '@/components/ui/button';
 import { ArrowUpRight, LockKeyhole, CheckCheck, Radar, Crosshair } from 'lucide-react';
 import cityScene from '@/assets/case-city.jpg';
+import { useCallback, useState } from 'react';
+import { GameIntro } from '@/components/GameIntro';
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "CASE ZERO: Ghost Detective — Case Map" },
-      { name: "description", content: "Choose your next haunted case. Solve each crime to unlock the next ghost." },
+      { title: "CASE ZERO — Enter the Ghost Investigation" },
+      { name: "description", content: "Enter CASE ZERO, discover fictional ghost cases in your area, and investigate the secrets of dead thieves." },
       { property: "og:title", content: "CASE ZERO: Ghost Detective" },
       { property: "og:description", content: "Investigate fictional crimes haunted by the ghosts of dead thieves." },
       { property: "og:type", content: "website" },
@@ -22,10 +24,14 @@ export const Route = createFileRoute("/")({
 });
 
 function CaseMap() {
+  const [entered, setEntered] = useState(false);
+  const enter = useCallback(() => setEntered(true), []);
   const { save } = useSave();
   const { cases } = useCases();
   const published = cases.filter((c) => c.status === "published" && (save.selectedArea ? c.campaign === `area:${save.selectedArea}` : !c.campaign));
   const current = published.find((c) => !save.cases[c.id]?.solved && isUnlocked(cases, save, c));
+
+  if (!entered) return <GameIntro onEnter={enter} />;
 
   return (
     <Shell>
