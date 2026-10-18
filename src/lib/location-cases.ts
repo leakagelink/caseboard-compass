@@ -1,4 +1,5 @@
 import type { GameCase } from '@/data/cases';
+import { LOCATION_PLOTS } from '@/data/location-plots';
 
 export type AreaAssignment = { area: string; caseIds: string[] };
 export function locationArea(latitude: number, longitude: number): string {
@@ -9,15 +10,16 @@ export function locationArea(latitude: number, longitude: number): string {
 export function makeLocationCases(area: string): GameCase[] {
   let seed = 2166136261;
   for (const char of area) seed = Math.imul(seed ^ char.charCodeAt(0), 16777619) >>> 0;
-  const identity = seed.toString(36).toUpperCase();
-  const names = ['Ravi', 'Mira', 'Kabir', 'Nisha', 'Arjun', 'Tara'];
-  const plots = [
-    { title: 'The Vanishing Courier', theft: 'a sealed collection of antique coins', escape: 'replaced delivery receipts and escaped under a courier alias', death: 'was betrayed by the accomplice who sealed the hideout during a fire', trace: 'burned delivery receipts', ghost: 'The Ash Courier' },
-    { title: 'The Silent Watchmaker', theft: 'a jewelled mechanical watch', escape: 'altered the timestamps on a security recording and left through a service passage', death: 'was locked inside the abandoned workshop by the fence who wanted the watch', trace: 'a recording with mismatched clock times', ghost: 'The Broken Hour' },
-    { title: 'The Last Lantern', theft: 'a merchant’s emerald necklace', escape: 'sent a decoy carrying an empty jewellery box while hiding the real necklace', death: 'fell into a concealed shaft after the accomplice removed its cover', trace: 'an empty box and a torn lantern strap', ghost: 'The Lantern Thief' },
-  ];
+  const [lat, lng] = area.split(':').map(Number);
+  if (lat === undefined || lng === undefined || !Number.isInteger(lat) || !Number.isInteger(lng) || lat < -9000 || lat > 9000 || lng < -18000 || lng > 18000) throw new Error('Invalid area.');
+  // Collision-free geographic identity; old campaigns retain their stored IDs.
+  const identity = `A${(lat + 9000).toString(36).padStart(3, '0')}${(lng + 18000).toString(36).padStart(3, '0')}`.toUpperCase();
+  const names = ['Ravi', 'Mira', 'Kabir', 'Nisha', 'Arjun', 'Tara', 'Dev', 'Leela', 'Ishan', 'Sana', 'Neel', 'Asha'];
+  const surnames = ['Sen', 'Rao', 'Das', 'Mehta', 'Roy', 'Shah', 'Bose', 'Seth'];
+  const plots = [0, 1, 2].map(index => LOCATION_PLOTS[(seed + index * 5) % LOCATION_PLOTS.length]);
   return plots.map((plot, index) => {
-    const name = `${names[(seed + index) % names.length]} ${identity}-${index + 1}`;
+    if (!plot) throw new Error('Missing case story.');
+    const name = `${names[(seed + index * 3) % names.length]} ${surnames[(Math.floor(seed / 12) + index) % surnames.length]} · ${identity}-${index + 1}`;
     const id = `LOC-${identity}-${index + 1}`;
     return {
       id, slug: id.toLowerCase(), campaign: `area:${area}`, order: index + 1,
@@ -25,17 +27,17 @@ export function makeLocationCases(area: string): GameCase[] {
       location: `Your selected area · ${identity} (fictional case)`, date: 'An undated fictional cold case',
       summary: `A thief vanished after stealing ${plot.theft}. Witness statements conflict, and ${plot.ghost} guards the missing evidence. Investigate this fictional case assigned to your selected area.`,
       ghost: { name: plot.ghost, trueName: name, temperament: 'Guards the secret of a betrayal', abilities: ['Veil — hides from the scanner', 'Echo — strikes when ignored'], hp: 100 + index * 20, power: 12 + index * 2, attackEvery: 3200, mode: 'banish' },
-      timeline: [{ time: 'Before midnight', event: `The theft of ${plot.theft} is reported.` }, { time: 'Midnight', event: 'An accomplice is seen leaving the hideout.' }, { time: 'Dawn', event: 'The thief has vanished; evidence is missing.' }],
+      timeline: [{ time: 'Before midnight', event: `The theft of ${plot.theft} is reported.` }, { time: 'Midnight', event: 'A false escape trail misdirects the search.' }, { time: 'Dawn', event: 'The thief has vanished; evidence is missing.' }],
       objectives: ['Inspect and sort the evidence', 'Identify who betrayed the thief', 'Confront the ghost and uncover its story'],
       clues: [
-        { id: `${id}-trace`, name: 'The altered evidence', location: 'Case file', description: `Investigators recovered ${plot.trace}.`, inspection: 'The evidence was deliberately altered to hide the escape route.', relevant: true },
-        { id: `${id}-ledger`, name: 'Accomplice’s ledger', location: 'Case file', description: 'A ledger records a secret payment.', inspection: 'The accomplice received payment to betray the thief and keep the stolen object.', relevant: true },
-        { id: `${id}-witness`, name: 'Dawn witness statement', location: 'Case file', description: 'A witness heard the hideout being closed.', inspection: 'The accomplice was the last person to leave; the thief never emerged.', relevant: true },
+        { id: `${id}-trace`, name: plot.trace, location: 'Case file', description: 'An overlooked object survives in the cold-case archive.', inspection: plot.traceDetail, relevant: true },
+        { id: `${id}-ledger`, name: 'The hidden record', location: 'Case file', description: 'An entry contradicts a suspect’s account.', inspection: plot.proof, relevant: true },
+        { id: `${id}-witness`, name: 'Dawn witness statement', location: 'Case file', description: 'A witness recalls the last movements that night.', inspection: plot.witness, relevant: true },
         { id: `${id}-rumour`, name: 'Market rumour', location: 'Case file', description: 'A passer-by claims the thief left town.', inspection: 'The rumour is hearsay from a different date; it cannot establish an escape.', relevant: false },
       ],
-      suspects: [{ id: 'accomplice', name: 'The accomplice', role: 'Inside partner' }, { id: 'witness', name: 'The dawn witness', role: 'Passer-by' }, { id: 'merchant', name: 'The merchant', role: 'Owner of the stolen object' }],
-      culprit: 'accomplice', deductionQuestion: 'Who betrayed the vanished thief?',
-      reveal: `${name} was the thief behind the theft of ${plot.theft}. The police failed to catch them because they ${plot.escape}. They never reached freedom: the thief ${plot.death}. The accomplice concealed the death and kept the stolen object, leaving the disappearance unsolved. The ghost remained bound to that betrayal. Your investigation exposed the accomplice, and your victory finally ended the haunting. This story and all its characters are fictional; it is not a claim about a real crime at your location.`,
+      suspects: [{ id: 'partner', name: 'The partner', role: 'Inside partner' }, { id: 'fence', name: 'The fence', role: 'Secret buyer’s agent' }, { id: 'keeper', name: 'The keeper', role: 'Custodian of the site' }],
+      culprit: plot.culprit, deductionQuestion: 'Who betrayed the vanished thief?',
+      reveal: `${name} was the thief behind the theft of ${plot.theft}. The police failed to catch them because they ${plot.escape}. They never reached freedom: the thief ${plot.death}. The ${plot.culprit} concealed the death and kept the stolen object, leaving the disappearance unsolved. The ghost remained bound to that betrayal. Your investigation exposed the ${plot.culprit}, and your victory finally ended the haunting. This story and all its characters are fictional; it is not a claim about a real crime at your location.`,
       rewardXp: 150 + index * 50,
     };
   });
