@@ -4,6 +4,7 @@ import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { CASES } from '@/data/cases';
 import { applyAction, type CloudSave } from './game-engine';
 import { emptySave } from './game';
+import { makeLocationCases } from './location-cases';
 
 const actionSchema = z.object({ caseId: z.string(), kind: z.enum(['inspect','judge','accuse','hint','start','tick','scan','strike','dodge']), clueId: z.string().optional(), verdict: z.enum(['relevant','misleading']).optional(), suspectId: z.string().optional() });
 export const gameAction = createServerFn({ method: 'POST' }).middleware([requireSupabaseAuth]).inputValidator(input => actionSchema.parse(input)).handler(async ({ data, context }) => {
@@ -24,7 +25,7 @@ export const gameAction = createServerFn({ method: 'POST' }).middleware([require
     const row = retry === 0 && initialRow.data ? initialRow : await supabaseAdmin.from('game_saves').select('state,revision').eq('user_id', context.userId).single();
     if (row.error || !row.data) throw new Error('Could not load progress.');
     const state = (row.data.state ?? emptySave) as unknown as CloudSave;
-    const result = applyAction(state, cases, data, receivedAt);
+    const result = applyAction(state, [...cases, ...(state.locationCases ?? [])], data, receivedAt);
     // Database latency must not drain health or consume scanner visibility.
     const encounter = result.state.encounters?.[data.caseId];
     const processingTime = Math.max(0, Date.now() - receivedAt);
