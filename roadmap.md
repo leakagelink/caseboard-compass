@@ -1,5 +1,5 @@
 # Phase 1 completion
-- [ ] Add animated ghost splash and Yes/No location invitation; verify optional permission and map entry.
+- [x] Add animated ghost splash and Yes/No location invitation; 7 targeted tests pass, signed-in Yes saves the area and reload retains it, No opens the map, mobile/desktop and reduced motion verified.
 - [x] Upgrade game presentation with cinematic case scenery, animated archive, evidence tiles, bestiary portraits and combat feedback; gameplay rules unchanged.
 - [x] Use free local background music synthesis and built-in story narration; no paid API or automatic story generation.
 - [x] Connect Google/Lovable player sign-in and online progress.
