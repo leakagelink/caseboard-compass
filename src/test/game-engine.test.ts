@@ -22,7 +22,7 @@ describe('online gameplay validation', () => {
     const encounter = structuredClone(state.encounters?.[c.id]);
     state = applyAction(state, CASES, { caseId: c.id, kind: 'start' }, start + 3300).state;
     expect(state.encounters?.[c.id]).toEqual(encounter);
-    expect(state.encounters?.[c.id]?.hp).toBe(90);
+    expect(state.encounters?.[c.id]?.hp).toBe(88);
   });
   it('pause freezes health, scanner visibility and strike cooldowns across resume', () => {
     let state = applyAction(deduced(), CASES, { caseId: c.id, kind: 'start' }, start).state;

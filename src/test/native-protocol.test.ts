@@ -3,6 +3,7 @@ import { CASES } from '@/data/cases';
 import { emptySave } from '@/lib/game';
 import { checkRequest, nativeProgress, recordRequest } from '@/lib/native-protocol';
 import { actionSchema, areaSchema, nativeEnvelope } from '@/lib/game-input';
+import type { CloudSave } from '@/lib/game-engine';
 
 const key = { requestId: '12345678-1234-4234-8234-123456789000', fingerprint: 'first', expectedRevision: 0 };
 describe('native request contract', () => {
@@ -16,13 +17,13 @@ describe('native request contract', () => {
     expect(() => checkRequest(state, 1, { ...key, fingerprint: 'different' })).toThrow('another action');
   });
   it('rejects stale new requests and retries whose receipt was evicted', () => {
-    let state = structuredClone(emptySave);
+    let state: CloudSave = structuredClone(emptySave);
     for (let i = 0; i < 129; i++) state = recordRequest(state, i + 1, { ...key, requestId: `request-${i}` }, 10000 + i * 60000);
     expect(state.receipts).toHaveLength(128);
     expect(() => checkRequest(state, 129, { ...key, requestId: 'request-0' })).toThrow('Progress changed');
   });
   it('limits committed native mutations to 120 per minute', () => {
-    let state = structuredClone(emptySave);
+    let state: CloudSave = structuredClone(emptySave);
     for (let i = 0; i < 120; i++) state = recordRequest(state, i + 1, { ...key, requestId: `request-${i}` }, 10000);
     expect(() => recordRequest(state, 121, key, 10001)).toThrow('Too many actions');
     expect(recordRequest(state, 121, key, 70000).nativeRate?.count).toBe(1);
