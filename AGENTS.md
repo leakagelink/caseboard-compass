@@ -15,3 +15,7 @@
 - Keep case stories bundled and store editable metadata in case_settings; this preserves the Phase 1 case catalogue while sharing admin changes.
 - Store server-assigned location campaign snapshots in private game saves and scope unlocks per campaign; revisits preserve stories without tying local cases to demo progression.
 - Keep native AR integration specifications separate from web camera overlays; the web project cannot supply ARCore/ARKit spatial tracking or native builds.
+- Share server-only game persistence between web RPCs and versioned native HTTP handlers; this prevents divergent rewards and progression rules.
+- Native HTTP handlers verify user tokens independently and return stage-allowlisted data; the public URL prefix is not an authorization boundary.
+- Persist native retry receipts and rate counters atomically with revision-checked saves; replay never executes an action twice and returns current progress plus the original applied revision.
+- Select authored location plots deterministically with collision-free geographic IDs; preserve already assigned snapshots so catalogue changes cannot rewrite ongoing cases.

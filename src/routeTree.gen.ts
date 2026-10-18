@@ -16,6 +16,10 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as CaseCaseIdIndexRouteImport } from './routes/case.$caseId.index'
 import { Route as CaseCaseIdEvidenceRouteImport } from './routes/case.$caseId.evidence'
 import { Route as CaseCaseIdHuntRouteImport } from './routes/case.$caseId.hunt'
+import { Route as ApiPublicNativeV1ActionRouteImport } from './routes/api.public.native.v1.action'
+import { Route as ApiPublicNativeV1AreaRouteImport } from './routes/api.public.native.v1.area'
+import { Route as ApiPublicNativeV1ProgressRouteImport } from './routes/api.public.native.v1.progress'
+import { Route as ApiPublicNativeV1SessionRouteImport } from './routes/api.public.native.v1.session'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +56,28 @@ const CaseCaseIdHuntRoute = CaseCaseIdHuntRouteImport.update({
   path: '/case/$caseId/hunt',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicNativeV1ActionRoute = ApiPublicNativeV1ActionRouteImport.update({
+  id: '/api/public/native/v1/action',
+  path: '/api/public/native/v1/action',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicNativeV1AreaRoute = ApiPublicNativeV1AreaRouteImport.update({
+  id: '/api/public/native/v1/area',
+  path: '/api/public/native/v1/area',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicNativeV1ProgressRoute =
+  ApiPublicNativeV1ProgressRouteImport.update({
+    id: '/api/public/native/v1/progress',
+    path: '/api/public/native/v1/progress',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicNativeV1SessionRoute =
+  ApiPublicNativeV1SessionRouteImport.update({
+    id: '/api/public/native/v1/session',
+    path: '/api/public/native/v1/session',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +87,10 @@ export interface FileRoutesByFullPath {
   '/case/$caseId/evidence': typeof CaseCaseIdEvidenceRoute
   '/case/$caseId/hunt': typeof CaseCaseIdHuntRoute
   '/case/$caseId/': typeof CaseCaseIdIndexRoute
+  '/api/public/native/v1/action': typeof ApiPublicNativeV1ActionRoute
+  '/api/public/native/v1/area': typeof ApiPublicNativeV1AreaRoute
+  '/api/public/native/v1/progress': typeof ApiPublicNativeV1ProgressRoute
+  '/api/public/native/v1/session': typeof ApiPublicNativeV1SessionRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +100,10 @@ export interface FileRoutesByTo {
   '/case/$caseId/evidence': typeof CaseCaseIdEvidenceRoute
   '/case/$caseId/hunt': typeof CaseCaseIdHuntRoute
   '/case/$caseId': typeof CaseCaseIdIndexRoute
+  '/api/public/native/v1/action': typeof ApiPublicNativeV1ActionRoute
+  '/api/public/native/v1/area': typeof ApiPublicNativeV1AreaRoute
+  '/api/public/native/v1/progress': typeof ApiPublicNativeV1ProgressRoute
+  '/api/public/native/v1/session': typeof ApiPublicNativeV1SessionRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +114,10 @@ export interface FileRoutesById {
   '/case/$caseId/evidence': typeof CaseCaseIdEvidenceRoute
   '/case/$caseId/hunt': typeof CaseCaseIdHuntRoute
   '/case/$caseId/': typeof CaseCaseIdIndexRoute
+  '/api/public/native/v1/action': typeof ApiPublicNativeV1ActionRoute
+  '/api/public/native/v1/area': typeof ApiPublicNativeV1AreaRoute
+  '/api/public/native/v1/progress': typeof ApiPublicNativeV1ProgressRoute
+  '/api/public/native/v1/session': typeof ApiPublicNativeV1SessionRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +129,10 @@ export interface FileRouteTypes {
     | '/case/$caseId/evidence'
     | '/case/$caseId/hunt'
     | '/case/$caseId/'
+    | '/api/public/native/v1/action'
+    | '/api/public/native/v1/area'
+    | '/api/public/native/v1/progress'
+    | '/api/public/native/v1/session'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +142,10 @@ export interface FileRouteTypes {
     | '/case/$caseId/evidence'
     | '/case/$caseId/hunt'
     | '/case/$caseId'
+    | '/api/public/native/v1/action'
+    | '/api/public/native/v1/area'
+    | '/api/public/native/v1/progress'
+    | '/api/public/native/v1/session'
   id:
     | '__root__'
     | '/'
@@ -109,6 +155,10 @@ export interface FileRouteTypes {
     | '/case/$caseId/evidence'
     | '/case/$caseId/hunt'
     | '/case/$caseId/'
+    | '/api/public/native/v1/action'
+    | '/api/public/native/v1/area'
+    | '/api/public/native/v1/progress'
+    | '/api/public/native/v1/session'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +169,10 @@ export interface RootRouteChildren {
   CaseCaseIdEvidenceRoute: typeof CaseCaseIdEvidenceRoute
   CaseCaseIdHuntRoute: typeof CaseCaseIdHuntRoute
   CaseCaseIdIndexRoute: typeof CaseCaseIdIndexRoute
+  ApiPublicNativeV1ActionRoute: typeof ApiPublicNativeV1ActionRoute
+  ApiPublicNativeV1AreaRoute: typeof ApiPublicNativeV1AreaRoute
+  ApiPublicNativeV1ProgressRoute: typeof ApiPublicNativeV1ProgressRoute
+  ApiPublicNativeV1SessionRoute: typeof ApiPublicNativeV1SessionRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -172,6 +226,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CaseCaseIdHuntRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/native/v1/action': {
+      id: '/api/public/native/v1/action'
+      path: '/api/public/native/v1/action'
+      fullPath: '/api/public/native/v1/action'
+      preLoaderRoute: typeof ApiPublicNativeV1ActionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/native/v1/area': {
+      id: '/api/public/native/v1/area'
+      path: '/api/public/native/v1/area'
+      fullPath: '/api/public/native/v1/area'
+      preLoaderRoute: typeof ApiPublicNativeV1AreaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/native/v1/progress': {
+      id: '/api/public/native/v1/progress'
+      path: '/api/public/native/v1/progress'
+      fullPath: '/api/public/native/v1/progress'
+      preLoaderRoute: typeof ApiPublicNativeV1ProgressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/native/v1/session': {
+      id: '/api/public/native/v1/session'
+      path: '/api/public/native/v1/session'
+      fullPath: '/api/public/native/v1/session'
+      preLoaderRoute: typeof ApiPublicNativeV1SessionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -183,6 +265,10 @@ const rootRouteChildren: RootRouteChildren = {
   CaseCaseIdEvidenceRoute: CaseCaseIdEvidenceRoute,
   CaseCaseIdHuntRoute: CaseCaseIdHuntRoute,
   CaseCaseIdIndexRoute: CaseCaseIdIndexRoute,
+  ApiPublicNativeV1ActionRoute: ApiPublicNativeV1ActionRoute,
+  ApiPublicNativeV1AreaRoute: ApiPublicNativeV1AreaRoute,
+  ApiPublicNativeV1ProgressRoute: ApiPublicNativeV1ProgressRoute,
+  ApiPublicNativeV1SessionRoute: ApiPublicNativeV1SessionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
