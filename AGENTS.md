@@ -21,3 +21,4 @@
 - Select authored location plots deterministically with collision-free geographic IDs; preserve already assigned snapshots so catalogue changes cannot rewrite ongoing cases.
 - Keep background audio in GameAudioProvider with gesture-started local synthesis and ducking during built-in narration; playback never calls a paid audio service.
 - Keep cinematic scenery and motion presentation-only, with shared semantic effect tokens and reduced-motion fallbacks; visual feedback must not alter server-validated combat.
+- Keep the session-scoped opening on the case-map route and reuse LocationStart for explicit location consent; skipping must never request coordinates or change saved progress.
