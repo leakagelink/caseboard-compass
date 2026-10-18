@@ -13,3 +13,5 @@
 - Keep gameplay rules in the pure game engine and perform mutations through authenticated server functions with revision checks; clients cannot grant rewards or bypass case progression.
 - Store admin privileges only in user_roles and check them on every edit; no signup or client storage may confer admin access.
 - Keep case stories bundled and store editable metadata in case_settings; this preserves the Phase 1 case catalogue while sharing admin changes.
+- Store server-assigned location campaign snapshots in private game saves and scope unlocks per campaign; revisits preserve stories without tying local cases to demo progression.
+- Keep native AR integration specifications separate from web camera overlays; the web project cannot supply ARCore/ARKit spatial tracking or native builds.
