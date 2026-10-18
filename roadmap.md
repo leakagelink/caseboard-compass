@@ -9,6 +9,7 @@
 Verification limits: social-provider round trips and physical camera feed need the user's device. Camera-unavailable fallback was verified; true tracked 3D AR is outside Phase 1 web scope.
 
 # Location-based native AR game
+- [ ] Complete the remaining companion work requested by the owner: secure native HTTP integration, tracking/background pause protocol and richer fictional story variety.
 - [x] Prepare the native AR implementation blueprint and proposed integration contract; native HTTP endpoints are not implemented.
 - [x] Build approximate-area fictional template case assignment and persistent, independent progression in the web/cloud companion; verified signed-in assignment, investigation, combat win, reload and next-level unlock.
 - [x] Add the completed-case story reveal, device-voice controls and saved story replay to the companion. Text fallback verified; audible narration requires a supported phone.
