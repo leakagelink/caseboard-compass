@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { ACHIEVEMENTS, level, useCases, useSave } from "@/lib/progress";
 import { Bar, Section, Shell } from "@/components/Shell";
 import { supabase } from '@/integrations/supabase/client';
@@ -50,7 +50,7 @@ function Profile() {
                   <span className={pr?.solved ? "text-ghost" : "text-muted-foreground"}>{pr?.solved ? (c.ghost.mode === "release" ? "Released" : "Banished") : known ? "Encountered" : "Unknown"}</span>
                 </div>
                 <p className="font-display mt-1 text-lg">{known ? c.ghost.name : "??????"}</p>
-                {pr?.solved && <p className="text-xs text-muted-foreground">True identity: {c.ghost.trueName} · {c.ghost.temperament}</p>}
+                {pr?.solved && <><p className="text-xs text-muted-foreground">True identity: {c.ghost.trueName} · {c.ghost.temperament}</p><Button asChild variant="outline" className="mt-3"><Link to="/case/$caseId/hunt" params={{ caseId: c.slug }}>Read / listen to story</Link></Button></>}
               </div>
             );
           })}
