@@ -20,7 +20,8 @@ export const Route = createFileRoute("/admin")({
 });
 
 function Admin() {
-  const { cases, saveOverride, isAdmin, adminLoading, user, busy } = useCases();
+  const { cases: allCases, saveOverride, isAdmin, adminLoading, user, busy } = useCases();
+  const cases = allCases.filter(c => !c.campaign);
   const [editing, setEditing] = useState<string | null>(null);
 
   if (adminLoading) return <Shell><p role="status">Checking admin access…</p></Shell>;

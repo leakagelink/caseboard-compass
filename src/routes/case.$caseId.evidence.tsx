@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState } from "react";
-import { CASES, type Clue } from "@/data/cases";
+import { CASES, type Clue, type GameCase } from "@/data/cases";
 import { emptyCase, isUnlocked, useCases, useSave, type Verdict } from "@/lib/progress";
 import { Shell } from "@/components/Shell";
 import { Button } from '@/components/ui/button';
@@ -27,12 +27,17 @@ export const Route = createFileRoute("/case/$caseId/evidence")({
 
 function Board() {
   const { caseId } = Route.useParams();
-  const { cases } = useCases();
-  const c = cases.find((x) => x.slug === caseId);
-  const { save, act, busy, user, loading } = useSave();
-  if (!c && loading) return <p role="status">Loading case…</p>;
-  if (!c && loading) return <p role="status">Loading case…</p>;
+  const { cases, loading } = useSave();
+  const c = cases.find(x => x.slug === caseId);
+  if (loading) return <Shell><p role="status">Loading case…</p></Shell>;
   if (!c) throw notFound();
+  return <BoardReady key={c.id} c={c} />;
+}
+
+function BoardReady({ c }: { c: GameCase }) {
+  const { caseId } = Route.useParams();
+  const { cases } = useCases();
+  const { save, act, busy, user, loading } = useSave();
   const p = save.cases[c.id] ?? emptyCase;
   const [open, setOpen] = useState<Clue | null>(null);
   const [wrong, setWrong] = useState(false);
