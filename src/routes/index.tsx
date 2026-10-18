@@ -21,7 +21,7 @@ export const Route = createFileRoute("/")({
 function CaseMap() {
   const { save } = useSave();
   const { cases } = useCases();
-  const published = cases.filter((c) => c.status === "published" && (!c.campaign || c.campaign === ));
+  const published = cases.filter((c) => c.status === "published" && (save.selectedArea ? c.campaign === `area:${save.selectedArea}` : !c.campaign));
   const current = published.find((c) => !save.cases[c.id]?.solved && isUnlocked(cases, save, c));
 
   return (

@@ -1,6 +1,7 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { CASES } from "@/data/cases";
+import { CASES, type GameCase } from "@/data/cases";
+import { StoryPlayback } from '@/components/StoryPlayback';
 import { emptyCase, isUnlocked, useCases, useSave } from "@/lib/progress";
 import { Bar } from "@/components/Shell";
 import { Button } from "@/components/ui/button";
@@ -29,10 +30,17 @@ export const Route = createFileRoute("/case/$caseId/hunt")({
 
 function Hunt() {
   const { caseId } = Route.useParams();
+  const { cases, loading } = useSave();
+  const c = cases.find(x => x.slug === caseId);
+  if (loading) return <p role="status">Loading encounter…</p>;
+  if (!c) throw notFound();
+  return <HuntReady key={c.id} c={c} />;
+}
+
+function HuntReady({ c }: { c: GameCase }) {
+  const { caseId } = Route.useParams();
   const { cases } = useCases();
   const { save, act, user, loading, busy, error, retry } = useSave();
-  const c = cases.find(x => x.slug === caseId);
-  if (!c) throw notFound();
   const p = save.cases[c.id] ?? emptyCase;
   const e = save.encounters?.[c.id];
   const [started, setStarted] = useState(false);
@@ -49,7 +57,7 @@ function Hunt() {
   const busyRef = useRef(false);
   busyRef.current = busy;
   const actRef = useRef(act); actRef.current = act;
-  const phase = started ? e?.phase ?? 'intro' : 'intro';
+  const phase = p.solved && !started ? 'won' : started ? e?.phase ?? 'intro' : 'intro';
   const stopCamera = () => { requestRef.current += 1; streamRef.current?.getTracks().forEach(t => t.stop()); streamRef.current = null; setCamera(false); };
   useEffect(() => { activeRef.current = true; return () => { activeRef.current = false; requestRef.current += 1; streamRef.current?.getTracks().forEach(t => t.stop()); void audioRef.current?.close(); }; }, []);
   useEffect(() => {
