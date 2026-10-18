@@ -1,4 +1,5 @@
 # Phase 1 completion
+- [x] Upgrade game presentation with cinematic case scenery, animated archive, evidence tiles, bestiary portraits and combat feedback; gameplay rules unchanged.
 - [x] Use free local background music synthesis and built-in story narration; no paid API or automatic story generation.
 - [x] Connect Google/Lovable player sign-in and online progress.
 - [x] Validate deductions, encounter actions, rewards and case unlocks online.

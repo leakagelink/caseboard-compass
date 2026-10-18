@@ -3,13 +3,14 @@ import type { ReactNode } from "react";
 import { useGame } from './GameProvider';
 import { Button } from './ui/button';
 import { MusicControl } from './GameAudio';
+import { Fingerprint, FolderSearch, UserRound, Shield } from 'lucide-react';
 
 export function Shell({ children, nav = true }: { children: ReactNode; nav?: boolean }) {
   const { user, loading, busy, error, retry, isAdmin } = useGame();
   return (
-    <div className="fog min-h-screen">
-      <main className={`mx-auto max-w-md px-5 pt-6 ${nav ? "pb-24" : "pb-10"}`}>
-        <div className="mb-2 flex justify-end"><MusicControl /></div>
+    <div className="game-shell min-h-screen">
+      <main className={`screen-enter mx-auto px-5 pt-6 ${nav ? "pb-28" : "pb-10"}`}>
+        <div className="mb-6 flex items-center justify-between border-b border-border pb-3"><Link to="/" className="flex items-center gap-3 text-xs uppercase tracking-widest"><Fingerprint className="h-7 w-7 text-ghost" /><span>CASE ZERO<span className="mt-1 block text-[9px] text-muted-foreground">Paranormal investigation unit</span></span></Link><MusicControl /></div>
         {loading && <p role="status" className="mb-4 text-xs text-ghost">Loading your detective file…</p>}
         {!loading && !user && <div className="mb-5 flex items-center justify-between border-b border-border pb-3"><span className="text-xs text-muted-foreground">Visitor</span><Button asChild size="sm" variant="outline"><Link to="/auth">Sign in to investigate</Link></Button></div>}
         {busy && <p role="status" className="mb-3 text-xs text-ghost">Saving…</p>}
@@ -28,10 +29,10 @@ export function Shell({ children, nav = true }: { children: ReactNode; nav?: boo
                 key={l.to}
                 to={l.to}
                 activeOptions={{ exact: l.to === "/" }}
-                className="py-4 uppercase tracking-widest text-muted-foreground"
+                className="flex flex-col items-center gap-1 py-3 uppercase tracking-widest text-muted-foreground transition-colors hover:text-ghost"
                 activeProps={{ className: "text-ghost" }}
               >
-                {l.label}
+                {l.label === 'Cases' ? <FolderSearch className="h-4 w-4" /> : l.label === 'Profile' ? <UserRound className="h-4 w-4" /> : <Shield className="h-4 w-4" />}{l.label}
               </Link>
             ))}
           </div>

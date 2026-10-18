@@ -3,6 +3,8 @@ import { ACHIEVEMENTS, level, useCases, useSave } from "@/lib/progress";
 import { Bar, Section, Shell } from "@/components/Shell";
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Fingerprint, Award } from 'lucide-react';
+import ghostImage from '@/assets/ghost.png';
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -30,7 +32,8 @@ function Profile() {
     <Shell>
       <h1 className="font-display text-3xl">Detective File</h1>
       {user && <p className="mt-2 text-xs text-ghost">{user.user_metadata?.['full_name'] ?? 'Detective'} · Online progress</p>}
-      <div className="mt-4 rounded-lg border border-border bg-card p-4">
+      <div className="mt-4 border-y border-ghost py-6">
+        <Fingerprint className="mb-4 h-12 w-12 text-ghost" />
         <div className="flex justify-between text-sm"><span>Level {lv}</span><span className="text-ghost">{save.xp} XP</span></div>
         <div className="mt-2"><Bar value={save.xp % 200} max={200} tone="ghost" /></div>
         <p className="mt-2 text-xs text-muted-foreground">
@@ -39,12 +42,13 @@ function Profile() {
       </div>
 
       <Section title="Ghost Bestiary">
-        <div className="space-y-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {cases.map((c) => {
             const pr = save.cases[c.id];
             const known = !!pr?.deduced;
             return (
-              <div key={c.id} className={`rounded-lg border bg-card p-4 ${pr?.solved ? "border-ghost" : "border-border"}`}>
+              <div key={c.id} className={`mission-card rounded-md border bg-card p-4 ${pr?.solved ? "border-ghost" : "border-border"}`}>
+                <div className="relative mb-3 flex h-36 items-center justify-center overflow-hidden border-b border-border"><img src={ghostImage} alt={known ? c.ghost.name : 'Unidentified spectral entity'} width={768} height={1024} loading="lazy" className={`ghost-portrait h-36 w-28 ${known ? '' : 'opacity-25 blur-sm'}`} /><div className="spectral-sweep" /></div>
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground">{c.id}</span>
                   <span className={pr?.solved ? "text-ghost" : "text-muted-foreground"}>{pr?.solved ? (c.ghost.mode === "release" ? "Released" : "Banished") : known ? "Encountered" : "Unknown"}</span>
@@ -58,11 +62,12 @@ function Profile() {
       </Section>
 
       <Section title="Achievements">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {ACHIEVEMENTS.map((a) => {
             const got = a.test(save);
             return (
               <div key={a.id} className={`rounded-md border p-3 ${got ? "border-primary bg-card" : "border-border opacity-50"}`}>
+                <Award className={`mb-3 h-7 w-7 ${got ? 'text-signal' : 'text-muted-foreground'}`} />
                 <p className="font-display text-sm">{got ? "◆ " : "◇ "}{a.name}</p>
                 <p className="mt-1 text-[11px] text-muted-foreground">{a.desc}</p>
               </div>
