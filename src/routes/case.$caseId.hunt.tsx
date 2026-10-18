@@ -7,6 +7,7 @@ import { Bar } from "@/components/Shell";
 import { Button } from "@/components/ui/button";
 import { Volume2, VolumeX, Radar, Shield, Zap, Pause, Play } from "lucide-react";
 import ghostImg from "@/assets/ghost.png";
+import { MusicControl } from '@/components/GameAudio';
 
 export const Route = createFileRoute("/case/$caseId/hunt")({
   loader: ({ params }) => {
@@ -101,6 +102,7 @@ function HuntReady({ c }: { c: GameCase }) {
     <div className="scanlines pointer-events-none absolute inset-0" />
     {phase === 'fight' && <><img src={ghostImg} alt={c.ghost.name} width={768} height={1024} className={`ghost-entity pointer-events-none absolute left-1/2 top-[45%] w-40 -translate-x-1/2 -translate-y-1/2 ${revealed ? 'opacity-95' : 'opacity-10 blur-sm'}`} /><div className="pointer-events-none absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-ghost/60" /></>}
     <div className="relative z-10 mx-auto flex min-h-screen max-w-md flex-col px-4 py-4">
+      <div className="mb-1 flex justify-end"><MusicControl /></div>
       <div className="flex items-center justify-between gap-2 text-xs"><Link to="/case/$caseId" params={{ caseId }} onClick={stopCamera} className="text-muted-foreground">← Exit</Link><span className="font-display text-ghost">SCANNER · {camera ? 'CAMERA OVERLAY' : 'PRACTICE'}</span><Button variant="ghost" size="icon" title={muted ? 'Enable sound' : 'Mute sound'} aria-label={muted ? 'Enable sound' : 'Mute sound'} onClick={() => setMuted(!muted)}>{muted ? <VolumeX /> : <Volume2 />}</Button></div>
       {error && <div role="alert" className="mt-3 bg-background/90 p-3 text-sm text-primary"><p>{error}</p><Button variant="outline" size="sm" onClick={retry}>Retry connection</Button></div>}
       {phase === 'fight' && <div className="mt-2 flex justify-end"><Button variant="outline" size="icon" aria-label="Pause encounter" title="Pause encounter" disabled={busy} onClick={() => void pause()}><Pause /></Button></div>}
