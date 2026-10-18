@@ -1,17 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, Square } from 'lucide-react';
+import { useGameAudio } from './GameAudio';
 
 export function StoryPlayback({ text }: { text: string }) {
+  const { narrating } = useGameAudio();
+  const narratingRef = useRef(narrating); narratingRef.current = narrating;
   const [status, setStatus] = useState<'idle' | 'playing' | 'paused'>('idle');
   const [error, setError] = useState<string | null>(null);
   const utterance = useRef<SpeechSynthesisUtterance | null>(null);
-  useEffect(() => () => { window.speechSynthesis?.cancel(); }, [text]);
+  useEffect(() => () => { window.speechSynthesis?.cancel(); narratingRef.current(false); }, [text]);
+  useEffect(() => { narratingRef.current(status === 'playing'); }, [status]);
   function play() {
     if (!('speechSynthesis' in window)) { setError('Voice playback is unavailable on this device. The full story is below.'); return; }
     if (status === 'paused') { window.speechSynthesis.resume(); setStatus('playing'); return; }
     window.speechSynthesis.cancel(); setError(null);
     const speech = new SpeechSynthesisUtterance(text); speech.lang = 'en-IN'; speech.rate = 0.9;
+    const voices = window.speechSynthesis.getVoices();
+    const voice = voices.find(v => v.localService && v.lang.toLowerCase() === 'en-in')
+      ?? voices.find(v => v.localService && v.lang.toLowerCase().startsWith('en'));
+    if (voice) speech.voice = voice;
     speech.onend = () => setStatus('idle');
     speech.onerror = () => { setStatus('idle'); setError('Voice playback stopped. You can read the full story below.'); };
     utterance.current = speech; window.speechSynthesis.speak(speech); setStatus('playing');
