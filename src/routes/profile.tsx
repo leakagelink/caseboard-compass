@@ -84,7 +84,7 @@ function Profile() {
       <Section title="Settings & Privacy">
         <ul className="space-y-2 text-xs text-muted-foreground">
           <li>Camera is only requested when you start an AR hunt and is never recorded.</li>
-          <li>No location tracking. Signed-in progress is saved online.</li>
+          <li>Location is requested only when you choose area cases. An approximate area is saved online; no movement trail.</li>
           <li>Old device-only prototype saves remain on that device; online rewards start with a new investigation.</li>
         </ul>
         {user && <Button variant="outline" className="mt-4" onClick={() => void supabase.auth.signOut()}>Sign out</Button>}

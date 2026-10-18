@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { GAME_TITLE } from "@/data/cases";
 import { isUnlocked, level, useCases, useSave } from "@/lib/progress";
+import { LocationStart } from "@/components/LocationStart";
 import { Shell } from "@/components/Shell";
 
 export const Route = createFileRoute("/")({
@@ -20,7 +21,7 @@ export const Route = createFileRoute("/")({
 function CaseMap() {
   const { save } = useSave();
   const { cases } = useCases();
-  const published = cases.filter((c) => c.status === "published");
+  const published = cases.filter((c) => c.status === "published" && (!c.campaign || c.campaign === ));
   const current = published.find((c) => !save.cases[c.id]?.solved && isUnlocked(cases, save, c));
 
   return (
@@ -31,6 +32,7 @@ function CaseMap() {
         <span className="text-xs text-ghost">Lv {level(save.xp)} · {save.xp} XP</span>
       </div>
 
+      <LocationStart />
       {current && (
         <Link
           to="/case/$caseId"

@@ -10,6 +10,7 @@ import ghostImg from "@/assets/ghost.png";
 export const Route = createFileRoute("/case/$caseId/hunt")({
   loader: ({ params }) => {
     const c = CASES.find((x) => x.slug === params.caseId);
+    if (!c && /^loc-[a-z0-9]+-[1-3]$/.test(params.caseId)) return { title: 'Location case', id: params.caseId, ghost: 'Location ghost' };
     if (!c) throw notFound();
     return { title: c.title, ghost: c.ghost.name };
   },

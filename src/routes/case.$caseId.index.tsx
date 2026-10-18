@@ -6,6 +6,7 @@ import { Section, Shell } from "@/components/Shell";
 export const Route = createFileRoute("/case/$caseId/")({
   loader: ({ params }) => {
     const c = CASES.find((x) => x.slug === params.caseId);
+    if (!c && /^loc-[a-z0-9]+-[1-3]$/.test(params.caseId)) return { title: 'Location case', id: params.caseId, ghost: 'Location ghost' };
     if (!c) throw notFound();
     return { title: c.title, id: c.id };
   },
@@ -25,8 +26,9 @@ export const Route = createFileRoute("/case/$caseId/")({
 function Dossier() {
   const { caseId } = Route.useParams();
   const { cases } = useCases();
-  const { save } = useSave();
+  const { save, loading } = useSave();
   const c = cases.find((x) => x.slug === caseId);
+  if (!c && loading) return <p role="status">Loading case…</p>;
   if (!c) throw notFound();
   const p = save.cases[c.id];
   const open = isUnlocked(cases, save, c);

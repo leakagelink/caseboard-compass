@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 export const Route = createFileRoute("/case/$caseId/evidence")({
   loader: ({ params }) => {
     const c = CASES.find((x) => x.slug === params.caseId);
+    if (!c && /^loc-[a-z0-9]+-[1-3]$/.test(params.caseId)) return { title: 'Location case', id: params.caseId, ghost: 'Location ghost' };
     if (!c) throw notFound();
     return { title: c.title };
   },
@@ -29,6 +30,8 @@ function Board() {
   const { cases } = useCases();
   const c = cases.find((x) => x.slug === caseId);
   const { save, act, busy, user, loading } = useSave();
+  if (!c && loading) return <p role="status">Loading case…</p>;
+  if (!c && loading) return <p role="status">Loading case…</p>;
   if (!c) throw notFound();
   const p = save.cases[c.id] ?? emptyCase;
   const [open, setOpen] = useState<Clue | null>(null);
