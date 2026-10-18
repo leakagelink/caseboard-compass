@@ -20,3 +20,4 @@
 - Persist native retry receipts and rate counters atomically with revision-checked saves; replay never executes an action twice and returns current progress plus the original applied revision.
 - Select authored location plots deterministically with collision-free geographic IDs; preserve already assigned snapshots so catalogue changes cannot rewrite ongoing cases.
 - Keep background audio in GameAudioProvider with gesture-started local synthesis and ducking during built-in narration; playback never calls a paid audio service.
+- Keep cinematic scenery and motion presentation-only, with shared semantic effect tokens and reduced-motion fallbacks; visual feedback must not alter server-validated combat.

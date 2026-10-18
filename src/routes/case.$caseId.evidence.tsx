@@ -76,7 +76,7 @@ function BoardReady({ c }: { c: GameCase }) {
       </div>
       {hint && <p className="mt-2 text-xs text-ghost">{hint}</p>}
 
-      <div className="mt-5 grid grid-cols-2 gap-3">
+      <div className="evidence-grid mt-5 grid grid-cols-2 gap-4 md:grid-cols-3">
         {c.clues.map((cl, i) => {
           const v = p.verdicts[cl.id];
           const seen = p.inspected.includes(cl.id);
@@ -85,7 +85,7 @@ function BoardReady({ c }: { c: GameCase }) {
               key={cl.id}
               onClick={() => inspect(cl)}
               style={{ rotate: `${i % 2 ? 1.5 : -1.5}deg` }}
-              className={`h-auto whitespace-normal block rounded-md border bg-card p-3 text-left transition hover:border-ghost ${
+              className={`evidence-tile h-auto whitespace-normal block rounded-md border bg-card p-4 text-left transition hover:border-ghost ${
                 v === "relevant" ? "border-ghost" : v === "misleading" ? "border-primary opacity-60" : "border-border"
               }`}
             >

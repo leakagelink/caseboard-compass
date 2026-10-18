@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Volume2, VolumeX, Radar, Shield, Zap, Pause, Play } from "lucide-react";
 import ghostImg from "@/assets/ghost.png";
 import { MusicControl } from '@/components/GameAudio';
+import cityScene from '@/assets/case-city.jpg';
 
 export const Route = createFileRoute("/case/$caseId/hunt")({
   loader: ({ params }) => {
@@ -50,6 +51,8 @@ function HuntReady({ c }: { c: GameCase }) {
   const [camError, setCamError] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
   const [now, setNow] = useState(0);
+  const [effect, setEffect] = useState<{ kind: string; sequence: number } | null>(null);
+  const previousHp = useRef(e?.hp ?? 100);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const audioRef = useRef<AudioContext | null>(null);
@@ -73,6 +76,10 @@ function HuntReady({ c }: { c: GameCase }) {
     return () => { clearInterval(clock); clearInterval(tick); };
   }, [phase, c.id]);
   useEffect(() => { if (phase === 'won' || phase === 'lost') stopCamera(); }, [phase]);
+  useEffect(() => {
+    if (phase === 'fight' && e && e.hp < previousHp.current) setEffect(prev => ({ kind: 'damage', sequence: (prev?.sequence ?? 0) + 1 }));
+    previousHp.current = e?.hp ?? 100;
+  }, [e?.hp, phase]);
   const sound = (frequency: number) => {
     if (muted) return;
     try { audioRef.current ??= new AudioContext(); const ctx = audioRef.current; void ctx.resume(); const osc = ctx.createOscillator(); const gain = ctx.createGain(); osc.frequency.value = frequency; gain.gain.setValueAtTime(0.045, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18); osc.connect(gain); gain.connect(ctx.destination); osc.start(); osc.stop(ctx.currentTime + 0.18); } catch { /* Sound is optional; gameplay remains available. */ }
@@ -92,13 +99,15 @@ function HuntReady({ c }: { c: GameCase }) {
       if (activeRef.current) setCamError(err instanceof DOMException && err.name === 'NotAllowedError' ? 'Camera permission was denied. Use practice mode or allow the camera and retry.' : 'Camera is unavailable. You can still play in practice mode.');
     } finally { if (activeRef.current) setRequesting(false); }
   };
-  const command = async (kind: 'scan' | 'strike' | 'dodge') => { sound(kind === 'scan' ? 650 : kind === 'strike' ? 110 : 320); await act({ caseId: c.id, kind }); };
+  const command = async (kind: 'scan' | 'strike' | 'dodge') => { sound(kind === 'scan' ? 650 : kind === 'strike' ? 110 : 320); setEffect(prev => ({ kind, sequence: (prev?.sequence ?? 0) + 1 })); await act({ caseId: c.id, kind }); };
   const allowed = Boolean(user && p.deduced && isUnlocked(cases, save, c));
   const revealed = Boolean(e && now < e.revealedUntil);
   const cooldown = (at: number, duration: number) => Math.max(0, at + duration - now);
   const actionLabel = c.ghost.mode === 'release' ? 'Expose' : 'Banish';
   return <div className="relative min-h-screen overflow-hidden bg-background">
-    {camera ? <video ref={videoRef} playsInline muted className="absolute inset-0 h-full w-full object-cover" /> : <div className="fog absolute inset-0" />}
+    {camera ? <video ref={videoRef} playsInline muted className="absolute inset-0 h-full w-full object-cover" /> : <><img src={cityScene} alt="Fictional practice encounter environment" width={1536} height={1024} className="scene-image absolute inset-0 h-full w-full" /><div className="scene-shade absolute inset-0" /></>}
+    {phase === 'fight' && <div className="spectral-sweep" />}
+    {phase === 'fight' && effect && <div key={effect.sequence} className={`combat-flash ${effect.kind === 'damage' ? 'combat-damage' : ''}`} />}
     <div className="scanlines pointer-events-none absolute inset-0" />
     {phase === 'fight' && <><img src={ghostImg} alt={c.ghost.name} width={768} height={1024} className={`ghost-entity pointer-events-none absolute left-1/2 top-[45%] w-40 -translate-x-1/2 -translate-y-1/2 ${revealed ? 'opacity-95' : 'opacity-10 blur-sm'}`} /><div className="pointer-events-none absolute left-1/2 top-1/2 h-24 w-24 -translate-x-1/2 -translate-y-1/2 rounded-full border border-ghost/60" /></>}
     <div className="relative z-10 mx-auto flex min-h-screen max-w-md flex-col px-4 py-4">

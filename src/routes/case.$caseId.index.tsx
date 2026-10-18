@@ -2,6 +2,8 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { CASES } from "@/data/cases";
 import { isUnlocked, useCases, useSave } from "@/lib/progress";
 import { Section, Shell } from "@/components/Shell";
+import cityScene from '@/assets/case-city.jpg';
+import ghostImage from '@/assets/ghost.png';
 
 export const Route = createFileRoute("/case/$caseId/")({
   loader: ({ params }) => {
@@ -36,7 +38,9 @@ function Dossier() {
   return (
     <Shell>
       <Link to="/" className="text-xs text-muted-foreground">← Case Map</Link>
-      <div className="mt-4 rounded-lg border border-border bg-card p-5 shadow-[var(--shadow-eerie)]">
+      <div className="relative mt-4 overflow-hidden border-b border-ghost px-5 pb-6 pt-44 sm:pt-56">
+        <img src={cityScene} alt="Haunted alley case setting" width={1536} height={1024} className="scene-image absolute inset-0 h-full w-full" /><div className="scene-shade absolute inset-0" />
+        <div className="relative">
         <div className="flex items-center justify-between text-xs">
           <span className="font-display text-ghost">{c.id}</span>
           <span className="rounded border border-primary px-2 py-0.5 uppercase text-primary">{p?.solved ? "Closed" : "Open"}</span>
@@ -45,6 +49,7 @@ function Dossier() {
         <p className="mt-1 text-xs text-muted-foreground">{c.location} · {c.date}</p>
         <p className="mt-4 text-sm leading-relaxed text-card-foreground">{c.summary}</p>
         <p className="mt-3 text-xs text-muted-foreground">Difficulty: <span className="text-ghost">{c.difficulty}</span> · Reward {c.rewardXp} XP</p>
+        </div>
       </div>
 
       <Section title="Timeline">
@@ -59,6 +64,7 @@ function Dossier() {
       </Section>
 
       <Section title="Entity Profile">
+        <img src={ghostImage} width={768} height={1024} loading="lazy" alt={c.ghost.name} className="ghost-portrait float-right ml-4 h-40 w-28" />
         <p className="font-display text-xl text-primary">{c.ghost.name}</p>
         <p className="text-xs text-muted-foreground">Identity: {p?.solved ? c.ghost.trueName : "classified until case solved"}</p>
         <p className="mt-2 text-sm">{c.ghost.temperament}</p>
