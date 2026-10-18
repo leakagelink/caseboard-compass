@@ -4,6 +4,19 @@ import { emptySave, isUnlocked } from '@/lib/game';
 import { CASES } from '@/data/cases';
 
 describe('location-specific fictional cases', () => {
+  it('assigns distinct plots and thief stories to Kolkata and Delhi areas', () => {
+    const a = makeLocationCases('2257:8836');
+    const b = makeLocationCases('2861:7720');
+    expect(a[0]?.title).not.toBe(b[0]?.title);
+    expect(a[0]?.clues[0]?.inspection).not.toBe(b[0]?.clues[0]?.inspection);
+    expect(new Set(a.map(c => c.title)).size).toBe(3);
+  });
+  it('uses collision-free area identities and varied culprits across the catalogue', () => {
+    const cases = Array.from({ length: 100 }, (_, i) => makeLocationCases(`${i}:100`)).flat();
+    expect(new Set(cases.map(c => c.id)).size).toBe(300);
+    expect(new Set(cases.map(c => c.title)).size).toBe(12);
+    expect(new Set(cases.map(c => c.culprit))).toEqual(new Set(['partner', 'fence', 'keeper']));
+  });
   it('gives different areas different thieves and case identities', () => {
     const a = makeLocationCases(locationArea(22.57, 88.36));
     const b = makeLocationCases(locationArea(28.61, 77.20));
