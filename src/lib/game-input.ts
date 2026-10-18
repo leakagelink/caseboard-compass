@@ -7,9 +7,11 @@ export const actionSchema = z.discriminatedUnion('kind', [
   z.object({ ...base, kind: z.literal('accuse'), suspectId: z.string().min(1).max(120) }).strict(),
   ...(['hint', 'start', 'tick', 'scan', 'strike', 'dodge', 'pause', 'resume'] as const).map(kind => z.object({ ...base, kind: z.literal(kind) }).strict()),
 ]);
-export const areaSchema = z.object({ area: z.string().regex(/^-?\d{1,5}:-?\d{1,5}$/).transform(value => {
+export const areaSchema = z.object({ area: z.string().regex(/^-?\d{1,5}:-?\d{1,5}$/).refine(value => {
   const [lat, lng] = value.split(':').map(Number);
-  if (lat === undefined || lng === undefined || lat < -9000 || lat > 9000 || lng < -18000 || lng > 18000) throw new Error('Invalid area.');
+  return lat !== undefined && lng !== undefined && lat >= -9000 && lat <= 9000 && lng >= -18000 && lng <= 18000;
+}, 'Invalid area.').transform(value => {
+  const [lat, lng] = value.split(':').map(Number);
   return `${lat}:${lng}`;
 }) }).strict();
 export const nativeEnvelope = z.object({ expectedRevision: z.number().int().min(0).max(2147483646), requestId: z.string().uuid() }).strict();

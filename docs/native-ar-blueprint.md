@@ -27,26 +27,46 @@ Native states: permissions → locating → briefing → investigating → deduc
 - Local plane anchors provide nearby placement during a session. Persistence across sessions is a separate requirement; never claim it from a GPS key alone.
 - Geospatial anchors require additional platform services, device support, localization quality and regional coverage. Make them optional, not a prerequisite to play anywhere safely.
 - Do not spawn targets on roads, tracks, water, private land or inaccessible surfaces. GPS cannot prove a safe surface. Require player confirmation and avoid encouraging running or backward movement.
-- Pause native combat on tracking loss and app backgrounding. A corresponding authenticated server pause/resume protocol must be implemented before native release; current browser combat timers do not provide that protocol.
+- Pause native combat on tracking loss and app backgrounding through the authenticated session endpoint. Confirm the response before considering combat paused; a disconnected client cannot retroactively freeze server time. The browser provides an explicit pause button, not native tracking-loss detection.
 - Never let poor tracking or unavailable depth cause invisible attacks. Depth-based occlusion is optional and provider-specific.
 - Never upload camera frames by default or retain movement trails. Keep only necessary area/case progress and provide account-data deletion before release.
 
 ## Companion implementation and limits
-The web companion saves approximate area campaigns inside the existing private, revision-checked game save. Server-generated case snapshots are retained so revisiting an area does not rewrite an ongoing story. Each area currently has three template-based levels, unique IDs and thief identity suffixes. These are fictional variations, not researched local history or unlimited original AI stories.
+The web companion saves approximate area campaigns inside the existing private, revision-checked game save. Snapshots are retained so revisiting an area does not rewrite an ongoing story. Each new area has three levels selected from twelve authored plots, with varied betrayals, escape methods, evidence and ghost identities. Geographic IDs are collision-free; old campaigns retain their saved IDs and stories. These are fictional variations, not researched local history or unlimited original AI stories. Plot reuse remains possible across areas.
 
 Rewards and evidence progression remain server-authoritative. Area assignment is not evidence of physical presence. A fresh area campaign is independent of the bundled demo campaign. The initial archive cap is twenty areas; it must be reviewed with storage and reward-abuse limits before launch.
 
-## Proposed native HTTP contract — NOT implemented
-Native clients must not manually call TanStack RPC URLs. Introduce versioned raw HTTP handlers with their own bearer verification and request validation before integrating Unity:
+## Implemented native HTTP contract
+Native clients must not manually call TanStack RPC URLs. These versioned raw HTTP handlers verify player bearer tokens independently and share the web game's server persistence and rules. They are the connection foundation, not a native client or native sign-in implementation:
 
-| Proposed endpoint | Contract |
+| Endpoint | Contract |
 | --- | --- |
 | POST /api/public/native/v1/area | Authenticated area key; returns assigned cases, current progress and revision |
 | GET /api/public/native/v1/progress | Authenticated own progress only; private/no-store caching |
 | POST /api/public/native/v1/action | Case ID, action, expected revision, unique request ID; server validates progression, cooldowns and damage |
 | POST /api/public/native/v1/session | Tracking/background pause and resume with bounded abuse protection |
 
-All of these paths are proposals, not existing endpoints. The public prefix only enables external access; handlers must reject unauthenticated requests before any private read. Extract shared server mutation helpers instead of calling RPC stubs inside these handlers.
+The public prefix enables external access, not anonymous access. Every handler rejects unauthenticated requests before private reads. Responses use private/no-store caching and exclude solution fields, hidden ghost identities and unrevealed endings. Inspection text appears after clue inspection; story and identity appear after a validated solve. Existing web snapshots remain answer-bearing data accessible to their owner, so this is not tamper-proof anti-cheat.
+
+### Request and response examples
+All POST requests require `Content-Type: application/json`, a maximum 8 KiB body, `expectedRevision` from the latest progress response and a new UUID `requestId`. Authentication is a short-lived user token in the Authorization header; never send tokens in the URL.
+
+```json
+{ "area": "2257:8836", "expectedRevision": 0, "requestId": "12345678-1234-4234-8234-123456789000" }
+```
+
+```json
+{ "action": { "caseId": "CASE-001", "kind": "scan" }, "expectedRevision": 12, "requestId": "12345678-1234-4234-8234-123456789001" }
+```
+
+Action kinds: `inspect` (clueId), `judge` (clueId and relevant/misleading verdict), `accuse` (suspectId), `hint`, `start`, `tick`, `scan`, `strike`, `dodge`. `/session` accepts the same action envelope but only `pause` or `resume`.
+
+Successful responses contain `revision`, `xp`, `hints`, `flawless`, `selectedArea`, `progress`, `encounters` and allowlisted `cases`. Mutations additionally return `appliedRevision`, `replayed` and an optional gameplay message. An identical retry reuses its original UUID, payload and expected revision: it does not execute again, but returns **current** progress and the original applied revision. Receipts are retained for the last 128 native mutations. An evicted retry has a stale revision and is rejected. State, receipt and rate counter commit in one conditional database update.
+
+Error shape: `{ "error": { "code": "REVISION_CONFLICT", "message": "…" } }`. Handle 401 by obtaining a fresh user session; 400/413/415 by correcting input; 422 by showing the rule rejection; 409 by rereading progress before a new command (never change the payload of an old UUID); 429 by waiting for Retry-After; 503 by offering retry without replacing the UUID. Native writes are capped at 120 committed mutations per minute per player; read/auth ingress still needs deployment-level abuse monitoring before release.
+
+### Encounter pause semantics
+Server time controls pause and resume. Up to five pauses are allowed per encounter attempt, each lasting at most 15 minutes. Incoming attacks due before pause are applied first. While paused, damage and actions do not advance; attack, scanner, strike and dodge clocks shift by the paused duration on resume. A longer pause marks the attempt lost and requires a new start. Reopening a fighting or paused encounter cannot reset health or its pause budget. A lost attempt may be retried; first-solve rewards remain one-time even when replaying a completed case. Read progress and resume explicitly after app restart; never silently resume limited tracking. A native client must still detect tracking loss and backgrounding itself and successfully send this protocol.
 
 Use short-lived user bearer tokens in Authorization, OS secure token storage, session refresh, expiry handling and retry-safe action IDs. Never embed service keys in Unity. Native sign-in/deep-link callbacks need a separate verified integration; current web broker redirects cannot simply be copied into a native client.
 

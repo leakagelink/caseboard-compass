@@ -16,6 +16,45 @@ function deduced(): CloudSave {
   return applyAction(state, CASES, { caseId: c.id, kind: 'accuse', suspectId: c.culprit }, start).state;
 }
 describe('online gameplay validation', () => {
+  it('starting an active encounter cannot restore player health or reset cooldowns', () => {
+    let state = applyAction(deduced(), CASES, { caseId: c.id, kind: 'start' }, start).state;
+    state = applyAction(state, CASES, { caseId: c.id, kind: 'scan' }, start + 3201).state;
+    const encounter = structuredClone(state.encounters?.[c.id]);
+    state = applyAction(state, CASES, { caseId: c.id, kind: 'start' }, start + 3300).state;
+    expect(state.encounters?.[c.id]).toEqual(encounter);
+    expect(state.encounters?.[c.id]?.hp).toBe(88);
+  });
+  it('pause freezes health, scanner visibility and strike cooldowns across resume', () => {
+    let state = applyAction(deduced(), CASES, { caseId: c.id, kind: 'start' }, start).state;
+    state = applyAction(state, CASES, { caseId: c.id, kind: 'scan' }, start + 10).state;
+    state = applyAction(state, CASES, { caseId: c.id, kind: 'strike' }, start + 20).state;
+    state = applyAction(state, CASES, { caseId: c.id, kind: 'pause' }, start + 100).state;
+    state = applyAction(state, CASES, { caseId: c.id, kind: 'strike' }, start + 60100).state;
+    expect(state.encounters?.[c.id]?.hp).toBe(100);
+    expect(state.encounters?.[c.id]?.ghostHp).toBe(85);
+    state = applyAction(state, CASES, { caseId: c.id, kind: 'resume' }, start + 60100).state;
+    expect(state.encounters?.[c.id]?.revealedUntil).toBe(start + 63010);
+    state = applyAction(state, CASES, { caseId: c.id, kind: 'strike' }, start + 60101).state;
+    expect(state.encounters?.[c.id]?.ghostHp).toBe(85);
+    expect(state.encounters?.[c.id]?.lastAttack).toBe(start + 60000);
+  });
+  it('expires paused encounters after 15 minutes instead of reviving them', () => {
+    let state = applyAction(deduced(), CASES, { caseId: c.id, kind: 'start' }, start).state;
+    state = applyAction(state, CASES, { caseId: c.id, kind: 'pause' }, start + 1).state;
+    state = applyAction(state, CASES, { caseId: c.id, kind: 'resume' }, start + 900002).state;
+    expect(state.encounters?.[c.id]?.phase).toBe('lost');
+    expect(state.xp).toBe(0);
+  });
+  it('allows five pauses per attempt, not six, including after reopening', () => {
+    let state = applyAction(deduced(), CASES, { caseId: c.id, kind: 'start' }, start).state;
+    for (let i = 0; i < 5; i++) {
+      state = applyAction(state, CASES, { caseId: c.id, kind: 'pause' }, start + i * 10 + 1).state;
+      state = applyAction(state, CASES, { caseId: c.id, kind: 'resume' }, start + i * 10 + 2).state;
+    }
+    state = applyAction(state, CASES, { caseId: c.id, kind: 'start' }, start + 100).state;
+    expect(state.encounters?.[c.id]?.pauseCount).toBe(5);
+    expect(() => applyAction(state, CASES, { caseId: c.id, kind: 'pause' }, start + 101)).toThrow('Pause limit');
+  });
   it('rejects direct access to Case 002 before Case 001 is solved', () => { expect(() => applyAction(emptySave, CASES, { caseId: 'CASE-002', kind: 'inspect', clueId: 'bolt-thread' }, start)).toThrow('locked'); });
   it('rejects starting a hunt without a deduction', () => { expect(() => applyAction(emptySave, CASES, { caseId: c.id, kind: 'start' }, start)).toThrow('evidence'); });
   it('does not accept an accusation without inspected and correctly sorted evidence', () => { expect(applyAction(emptySave, CASES, { caseId: c.id, kind: 'accuse', suspectId: c.culprit }, start).state.cases[c.id]?.deduced).not.toBe(true); });
